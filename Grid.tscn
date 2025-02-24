@@ -1,0 +1,45 @@
+[gd_scene load_steps=6 format=3 uid="uid://bigwhir5r8pmx"]
+
+[ext_resource type="Script" path="res://grid.gd" id="1_p3xk4"]
+[ext_resource type="PackedScene" uid="uid://coq63njxe520r" path="res://Branch.tscn" id="2_uk0hh"]
+[ext_resource type="AudioStream" uid="uid://dx5npcgh34dso" path="res://audio/beep_sound.wav" id="3_brclb"]
+[ext_resource type="AudioStream" uid="uid://bbxc0ho8xf6qd" path="res://audio/opening.mp3" id="4_6cn65"]
+[ext_resource type="Script" path="res://audio.gd" id="5_hvfix"]
+
+[node name="Grid" type="Node2D"]
+script = ExtResource("1_p3xk4")
+BranchScene = ExtResource("2_uk0hh")
+
+[node name="background_sprite" type="Sprite2D" parent="."]
+visible = false
+position = Vector2(252, 340)
+
+[node name="background_sprite2" type="Sprite2D" parent="."]
+visible = false
+z_index = -1
+position = Vector2(252, 340)
+
+[node name="Node2D" type="Node2D" parent="."]
+
+[node name="bg1" type="Sprite2D" parent="."]
+
+[node name="bg2" type="Sprite2D" parent="."]
+
+[node name="beep_sound" type="AudioStreamPlayer2D" parent="."]
+stream = ExtResource("3_brclb")
+
+[node name="bg_music" type="AudioStreamPlayer2D" parent="."]
+stream = ExtResource("4_6cn65")
+
+[node name="AudioManager" type="Node2D" parent="."]
+script = ExtResource("5_hvfix")
+
+[node name="TestMusicButton" type="Button" parent="."]
+visible = false
+offset_left = 185.0
+offset_top = -52.0
+offset_right = 272.0
+offset_bottom = -21.0
+text = "Music test"
+
+[connection signal="pressed" from="TestMusicButton" to="." method="_on_test_music_button_pressed"]

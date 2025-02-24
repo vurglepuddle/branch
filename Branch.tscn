@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3 uid="uid://coq63njxe520r"]
+
+[ext_resource type="Script" path="res://branch.gd" id="1_sskbb"]
+
+[node name="Branch" type="Node2D"]
+z_index = 10
+z_as_relative = false
+position = Vector2(154, 137)
+script = ExtResource("1_sskbb")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+z_index = 10
+z_as_relative = false
