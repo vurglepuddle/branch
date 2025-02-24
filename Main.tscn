@@ -1,0 +1,36 @@
+[gd_scene load_steps=5 format=3 uid="uid://b737exnpca667"]
+
+[ext_resource type="Script" path="res://grid.gd" id="1_7u11k"]
+[ext_resource type="Texture2D" uid="uid://bvtun0kkqfat3" path="res://sprites/branches/grid.png" id="1_onoap"]
+[ext_resource type="Texture2D" uid="uid://dq8501f1a05hg" path="res://sprites/branches/bg2.png" id="1_pnomh"]
+[ext_resource type="PackedScene" uid="uid://coq63njxe520r" path="res://Branch.tscn" id="2_cmxuk"]
+
+[node name="Main" type="Node2D"]
+
+[node name="Grid_Container" type="Node2D" parent="."]
+z_index = 5
+z_as_relative = false
+position = Vector2(223, 192)
+
+[node name="Grid" type="Node2D" parent="Grid_Container"]
+z_index = 10
+z_as_relative = false
+position = Vector2(430, 464)
+script = ExtResource("1_7u11k")
+BranchScene = ExtResource("2_cmxuk")
+
+[node name="Sprite2D2" type="Sprite2D" parent="."]
+visibility_layer = 256
+z_index = -2
+z_as_relative = false
+position = Vector2(427, 469)
+scale = Vector2(0.843254, 0.843254)
+texture = ExtResource("1_onoap")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+visibility_layer = 512
+z_index = -3
+z_as_relative = false
+position = Vector2(427, 469)
+scale = Vector2(0.843254, 0.843254)
+texture = ExtResource("1_pnomh")

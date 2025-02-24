@@ -1,0 +1,14 @@
+[remap]
+
+importer="com.nlaha.godotmidi"
+type="MidiResource"
+uid="uid://d0yg8nugiagts"
+path="res://.godot/imported/goldberg_variations_988_1_(nc)werths.mid-88bcd9cde8158b2619abd67f601bf973.res"
+
+[deps]
+
+source_file="res://goldberg_variations_988_1_(nc)werths.mid"
+dest_files=["res://.godot/imported/goldberg_variations_988_1_(nc)werths.mid-88bcd9cde8158b2619abd67f601bf973.res"]
+
+[params]
+

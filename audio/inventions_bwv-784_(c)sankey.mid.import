@@ -1,0 +1,14 @@
+[remap]
+
+importer="com.nlaha.godotmidi"
+type="MidiResource"
+uid="uid://bevxdgqi7pct2"
+path="res://.godot/imported/inventions_bwv-784_(c)sankey.mid-18b81a31f3517abd2a559e1bd58906ce.res"
+
+[deps]
+
+source_file="res://audio/inventions_bwv-784_(c)sankey.mid"
+dest_files=["res://.godot/imported/inventions_bwv-784_(c)sankey.mid-18b81a31f3517abd2a559e1bd58906ce.res"]
+
+[params]
+

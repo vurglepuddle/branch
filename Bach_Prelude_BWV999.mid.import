@@ -1,0 +1,14 @@
+[remap]
+
+importer="com.nlaha.godotmidi"
+type="MidiResource"
+uid="uid://0h2bjxip3hyy"
+path="res://.godot/imported/Bach_Prelude_BWV999.mid-0608783827bfdab8fa7bee0e7d911ea6.res"
+
+[deps]
+
+source_file="res://Bach_Prelude_BWV999.mid"
+dest_files=["res://.godot/imported/Bach_Prelude_BWV999.mid-0608783827bfdab8fa7bee0e7d911ea6.res"]
+
+[params]
+
