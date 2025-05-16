@@ -1,6 +1,6 @@
 extends Node2D  # Branch.gd
 
-const BranchType = preload("res://branch_types.gd").BranchType
+const BranchType = preload("res://scripts/core/branch_types.gd").BranchType
 
 @export var grid_x: int = 0
 @export var grid_y: int = 0
@@ -72,6 +72,21 @@ var textures = {
 		"dead": [null]
 	}
 }
+
+func play_terminal_blossom():
+	var animation_name = ""
+	match rotation_index:
+		0:
+			animation_name = "down_blossom"
+		1:
+			animation_name = "left_blossom"
+		2:
+			animation_name = "up_blossom"
+		3:
+			animation_name = "right_blossom"
+	if animation_name != "":
+		$AnimatedSprite2D.play(animation_name)
+
 
 # Default connections for rotation 0
 var connections = [1, 1, 0, 0]
