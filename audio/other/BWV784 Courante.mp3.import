@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://r02vbuvpsch7"
+path="res://.godot/imported/BWV784 Courante.mp3-f09bbe146228d872ef841d0f79e4d5ec.mp3str"
+
+[deps]
+
+source_file="res://audio/other/BWV784 Courante.mp3"
+dest_files=["res://.godot/imported/BWV784 Courante.mp3-f09bbe146228d872ef841d0f79e4d5ec.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

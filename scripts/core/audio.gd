@@ -1,13 +1,13 @@
 extends Node2D # audio.gd
 
-@export var beep_sound: AudioStream = preload("res://audio/beep_sound.wav")
+@export var beep_sound: AudioStream = preload("res://audio//other/beep_sound.wav")
 @export var difficulty_music: Dictionary = {
-	"baby": "res://audio/opening.mp3",
-	"intern": "res://audio/opening.mp3",
-	"profi": "res://audio/opening.mp3",
-	"master": "res://audio/opening.mp3",
-	"expert": "res://audio/opening.mp3",
-	"torrero": "res://audio/BWV784 Courante.mp3"
+	"baby": "res://audio/other/opening.mp3",
+	"intern": "res://audio/other/opening.mp3",
+	"profi": "res://audio/other/opening.mp3",
+	"master": "res://audio/other/opening.mp3",
+	"expert": "res://audio/other/opening.mp3",
+	"torrero": "res://audio/other/BWV784 Courante.mp3"
 }
 var sfx_player: AudioStreamPlayer
 var bg_player: AudioStreamPlayer

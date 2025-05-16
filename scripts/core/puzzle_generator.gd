@@ -1,7 +1,7 @@
 # puzzle_generator.gd
 extends Node
 
-const BranchType = preload("res://branch_types.gd").BranchType
+const BranchType = preload("res://scripts/core/branch_types.gd").BranchType
 
 # Generates a solvable puzzle
 func generate_solvable_puzzle(grid_width: int, grid_height: int, branch_scene: PackedScene) -> Dictionary:

@@ -1,9 +1,9 @@
 [gd_scene load_steps=5 format=3 uid="uid://b737exnpca667"]
 
-[ext_resource type="Script" path="res://grid.gd" id="1_7u11k"]
+[ext_resource type="Script" path="res://scripts/core/grid.gd" id="1_7u11k"]
 [ext_resource type="Texture2D" uid="uid://bvtun0kkqfat3" path="res://sprites/branches/grid.png" id="1_onoap"]
 [ext_resource type="Texture2D" uid="uid://dq8501f1a05hg" path="res://sprites/branches/bg2.png" id="1_pnomh"]
-[ext_resource type="PackedScene" uid="uid://coq63njxe520r" path="res://Branch.tscn" id="2_cmxuk"]
+[ext_resource type="PackedScene" uid="uid://coq63njxe520r" path="res://scenes/Branch.tscn" id="2_cmxuk"]
 
 [node name="Main" type="Node2D"]
 

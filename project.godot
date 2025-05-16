@@ -11,14 +11,14 @@ config_version=5
 [application]
 
 config/name="VETKA"
-run/main_scene="res://Grid.tscn"
+run/main_scene="res://scenes/Grid.tscn"
 config/features=PackedStringArray("4.3", "Mobile")
-config/icon="res://icon.svg"
+config/icon="res://icons/icon.svg"
 
 [display]
 
-window/size/viewport_width=840
-window/size/viewport_height=896
+window/size/viewport_width=545
+window/size/viewport_height=1222
 window/stretch/mode="canvas_items"
 window/handheld/orientation=1
 
@@ -37,3 +37,4 @@ ui_mute={
 [rendering]
 
 renderer/rendering_method="mobile"
+textures/vram_compression/import_etc2_astc=true
