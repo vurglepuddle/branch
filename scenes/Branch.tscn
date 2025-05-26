@@ -386,9 +386,9 @@ animations = [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_jkc53")
 }],
-"loop": true,
+"loop": false,
 "name": &"down_blossom",
-"speed": 5.0
+"speed": 3.0
 }, {
 "frames": [{
 "duration": 1.0,
@@ -451,9 +451,9 @@ animations = [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_i0xdo")
 }],
-"loop": true,
+"loop": false,
 "name": &"left_blossom",
-"speed": 5.0
+"speed": 3.0
 }, {
 "frames": [{
 "duration": 1.0,
@@ -516,9 +516,9 @@ animations = [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_5ltp4")
 }],
-"loop": true,
+"loop": false,
 "name": &"right_blossom",
-"speed": 5.0
+"speed": 3.0
 }, {
 "frames": [{
 "duration": 1.0,
@@ -581,9 +581,9 @@ animations = [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_fqcih")
 }],
-"loop": true,
+"loop": false,
 "name": &"up_blossom",
-"speed": 5.0
+"speed": 3.0
 }]
 
 [node name="Branch" type="Node2D"]
@@ -599,4 +599,4 @@ z_as_relative = false
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 visible = false
 sprite_frames = SubResource("SpriteFrames_tk3v2")
-animation = &"right_blossom"
+animation = &"down_blossom"

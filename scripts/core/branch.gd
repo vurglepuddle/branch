@@ -1,4 +1,5 @@
 extends Node2D  # Branch.gd
+class_name BranchNode
 
 const BranchType = preload("res://scripts/core/branch_types.gd").BranchType
 
@@ -75,17 +76,37 @@ var textures = {
 
 func play_terminal_blossom():
 	var animation_name = ""
-	match rotation_index:
-		0:
-			animation_name = "down_blossom"
-		1:
-			animation_name = "left_blossom"
-		2:
-			animation_name = "up_blossom"
-		3:
-			animation_name = "right_blossom"
-	if animation_name != "":
-		$AnimatedSprite2D.play(animation_name)
+	if connections[0] == 1: animation_name = "down_blossom"
+	elif connections[1] == 1: animation_name = "left_blossom"
+	elif connections[2] == 1: animation_name = "up_blossom"
+	elif connections[3] == 1: animation_name = "right_blossom"
+	else:
+		printerr("Terminal branch has no connections to determine blossom direction!")
+		return
+	
+	var anim_sprite = $AnimatedSprite2D # Get the node
+	if anim_sprite:
+		if anim_sprite.sprite_frames.has_animation(animation_name):
+			anim_sprite.visible = true # Make it visible NOW
+			anim_sprite.animation = animation_name # Set the animation
+			anim_sprite.play() # Play it from the beginning
+			print("Branch at (%s,%s) playing animation: %s" % [grid_x, grid_y, animation_name])
+		else:
+			printerr("Branch at (%s,%s) animation '%s' not found in SpriteFrames." % [grid_x, grid_y, animation_name])
+	else:
+		printerr("Branch at (%s,%s) missing AnimatedSprite2D node!" % [grid_x, grid_y])
+	
+		#match rotation_index:
+		#0:
+			#animation_name = "down_blossom"
+		#1:
+			#animation_name = "left_blossom"
+		#2:
+			#animation_name = "up_blossom"
+		#3:
+			#animation_name = "right_blossom"
+	#if animation_name != "":
+		#$AnimatedSprite2D.play(animation_name)
 
 
 # Default connections for rotation 0
@@ -264,7 +285,7 @@ func propagate_disconnection(grid_width: int, grid_height: int, branches: Array)
 
 func update_texture():
 	if sprite == null:
-		print("Error: Sprite2D is null for tile at (", grid_x, ", ", grid_y, ")")
+		#print("Error: Sprite2D is null for tile at (", grid_x, ", ", grid_y, ")")
 		return
 		
 	# Ensure branch_type is valid
@@ -290,7 +311,8 @@ func update_texture():
 		sprite.scale = Vector2(1, 1)  # Reset scale to 1:1
 		sprite.z_index = 1           # Ensure correct rendering order
 	else:
-		print("Warning: Texture is null for branch type ", branch_type, " and state ", state, " at (", grid_x, ", ", grid_y, ")")
+		return
+		#print("Warning: Texture is null for branch type ", branch_type, " and state ", state, " at (", grid_x, ", ", grid_y, ")")
 
 #func update_texture():
 	#if sprite == null:
