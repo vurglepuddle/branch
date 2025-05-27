@@ -1,10 +1,9 @@
-[gd_scene load_steps=7 format=3 uid="uid://bigwhir5r8pmx"]
+[gd_scene load_steps=6 format=3 uid="uid://bigwhir5r8pmx"]
 
 [ext_resource type="Script" path="res://scripts/core/grid.gd" id="1_p3xk4"]
 [ext_resource type="PackedScene" uid="uid://coq63njxe520r" path="res://scenes/Branch.tscn" id="2_uk0hh"]
 [ext_resource type="AudioStream" uid="uid://dx5npcgh34dso" path="res://audio/other/beep_sound.wav" id="3_brclb"]
 [ext_resource type="AudioStream" uid="uid://bbxc0ho8xf6qd" path="res://audio/other/opening.mp3" id="4_6cn65"]
-[ext_resource type="Script" path="res://scripts/core/audio.gd" id="5_hvfix"]
 [ext_resource type="Texture2D" uid="uid://dq8501f1a05hg" path="res://sprites/branches/bg2.png" id="6_8o5la"]
 
 [node name="Grid" type="Node2D"]
@@ -25,13 +24,15 @@ position = Vector2(252, 340)
 [node name="bg1" type="Sprite2D" parent="."]
 
 [node name="beep_sound" type="AudioStreamPlayer2D" parent="."]
+visible = false
 stream = ExtResource("3_brclb")
 
 [node name="bg_music" type="AudioStreamPlayer2D" parent="."]
+visible = false
 stream = ExtResource("4_6cn65")
 
 [node name="AudioManager" type="Node2D" parent="."]
-script = ExtResource("5_hvfix")
+visible = false
 
 [node name="TestMusicButton" type="Button" parent="."]
 visible = false

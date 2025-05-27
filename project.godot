@@ -11,10 +11,15 @@ config_version=5
 [application]
 
 config/name="VETKA"
-run/main_scene="res://scenes/Grid.tscn"
+run/main_scene="res://scenes/main_menu.tscn"
 config/features=PackedStringArray("4.3", "Mobile")
 boot_splash/show_image=false
 config/icon="res://icons/app icon.png"
+
+[autoload]
+
+AudioManager="*res://scripts/core/audio.gd"
+GlobalSettings="*res://scripts/core/GlobalSettings.gd"
 
 [display]
 

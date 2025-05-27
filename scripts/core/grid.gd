@@ -5,7 +5,7 @@ const PuzzleGenerator = preload("res://scripts/core/puzzle_generator.gd")
 var generator = PuzzleGenerator.new()
 # Reference to the Branch scene
 @export var BranchScene: PackedScene
-@onready var audio_manager: Node = $AudioManager
+#@onready var audio_manager: Node = $AudioManager
 
 var is_level_complete_animation_playing: bool = false # Prevent re-triggering
 
@@ -33,100 +33,140 @@ var difficulty_key_map = {
 	KEY_6: "torrero"
 }
 
-var current_difficulty_str: String = "torrero"
-var is_toroidal_grid: bool = false # NEW: Flag for toroidal mode
+var current_difficulty_str: String 
+var is_toroidal_grid: bool = false # Flag for toroidal mode
 
 # The size of the grid
-var grid_width = 6  # Horizontal grid size
-var grid_height = 17  # Vertical grid size
+var grid_width  # Horizontal grid size
+var grid_height  # Vertical grid size
 var branches = []
 var source_tile = null  # Holds a reference to the source tile
 # Backgrounds
 var bg1
 var all_connected = false # class-level variable for win condition
 
+func _ready():
+	randomize()
+	if GlobalSettings: # Check if the Autoload script exists
+		current_difficulty_str = GlobalSettings.current_difficulty
+		print("Grid: Loaded difficulty from GlobalSettings: " + current_difficulty_str)
+	else:
+		# Fallback if GlobalSettings is not found (e.g., running grid.tscn directly for testing)
+		current_difficulty_str = "torrero" # Your previous default value
+		printerr("Grid: GlobalSettings Autoload not found! Using default difficulty: " + current_difficulty_str)
+
+	# 2. Load the level based on the (now set) current_difficulty_str
+	# This function will use self.current_difficulty_str to set up everything
+	load_level_for_current_difficulty()
+
+	# 3. Tell AudioManager to play music for this difficulty
+	#if AudioManager:
+		#print("Grid: Telling AudioManager to play music for difficulty: " + current_difficulty_str)
+		#AudioManager.load_and_play_music_by_difficulty(current_difficulty_str)
+	#else:
+		#printerr("Grid: AudioManager not found! Cannot play difficulty-specific music.")
+
 func load_level_for_current_difficulty():
-	# Helper function to load/reload the level based on self.current_difficulty_str.
-	print("Loading level for difficulty: %s." % self.current_difficulty_str)
+	print("--- load_level_for_current_difficulty START for: %s ---" % self.current_difficulty_str)
 
 	if not difficulty_levels.has(self.current_difficulty_str):
 		printerr("Error: Difficulty level '%s' not found!" % self.current_difficulty_str)
-		# Fallback to the first defined difficulty if current one is invalid
-		if difficulty_levels.size() > 0:
-			self.current_difficulty_str = difficulty_levels.keys()[0]
+		var difficulty_keys = difficulty_levels.keys()
+		if difficulty_keys.size() > 0:
+			self.current_difficulty_str = difficulty_keys[0]
 			print("Fell back to difficulty: %s" % self.current_difficulty_str)
 		else:
 			printerr("FATAL: No difficulty levels defined!")
-			return # Cannot proceed
+			return
 
 	var current_difficulty_settings = difficulty_levels[self.current_difficulty_str]
 	
 	grid_width = current_difficulty_settings.size[0]
 	grid_height = current_difficulty_settings.size[1]
-	
-	self.is_toroidal_grid = (self.current_difficulty_str == "torrero") # Set the toroidal flag based on difficulty
-	print("Grid toroidal mode: %s" % self.is_toroidal_grid) # For debugging
+	self.is_toroidal_grid = (self.current_difficulty_str == "torrero")
+	print("Grid settings: WxH=%sx%s, Toroidal=%s" % [grid_width, grid_height, self.is_toroidal_grid])
 	
 	var prim_density_factor = current_difficulty_settings.prim_initial_density_factor
 	var prim_min_tiles = current_difficulty_settings.prim_min_tiles
 	var final_target_density = current_difficulty_settings.final_target_density_factor
 	var final_variation = current_difficulty_settings.final_density_variation_factor
-	var max_gen_attempts_for_level = current_difficulty_settings.max_gen_attempts # GET a specific max_gen_attempts
+	var max_gen_attempts_for_level = current_difficulty_settings.max_gen_attempts
 
 	print("Clearing old branches...")
 	var children_to_remove = []
 	for child in get_children():
-		# Keep essential nodes by name or specific type if they aren't BranchNode
-		if child.name == "AudioManager" or child.name == "bg1_sprite": # Example
-			continue
-			
-		# Check if the child is an instance of your BranchNode class
-		if child is BranchNode: # <--- THIS IS THE CLEAN CHECK
+		if child is BranchNode: # Assumes branch.gd has class_name BranchNode
 			children_to_remove.append(child)
-		# else:
-			# print("Keeping non-branch child: %s (Type: %s)" % [child.name, child.get_class()])
 			
+	if children_to_remove.size() > 0:
+		print("Found %s BranchNode children to remove." % children_to_remove.size())
+	else:
+		print("No existing BranchNode children found to remove (this is normal on first load).")
+		
 	for child_to_remove in children_to_remove:
-		child_to_remove.queue_free()
+		if is_instance_valid(child_to_remove):
+			child_to_remove.queue_free()
 	
-	
-	# Reset game state variables
-	self.all_connected = false # Crucial for new level
+	branches.clear() # Clear the internal array
+	source_tile = null # Reset source tile
+	self.all_connected = false
+	is_level_complete_animation_playing = false
+	print("Old branches cleared and state reset.")
 
+	print("Calling init_branches...")
 	init_branches(grid_width, grid_height, BranchScene, 
 				  prim_density_factor, prim_min_tiles,
 				  final_target_density, final_variation, self.is_toroidal_grid, max_gen_attempts_for_level)
+	print("init_branches call finished. Current branch count in array: %s" % branches.size())
 	
-	center_grid() 
-	
-	audio_manager.load_and_play_music_by_difficulty(self.current_difficulty_str)
+	var actual_branch_children_count = 0
+	for child in get_children():
+		if child is BranchNode:
+			actual_branch_children_count += 1
+	print("Actual BranchNode children in scene tree after init_branches: %s" % actual_branch_children_count)
 
-func _input(event): # Use _input for discrete key presses
-	if event is InputEventKey and event.pressed and not event.is_echo():
-		var new_difficulty_selected = false
-		var selected_difficulty_str = ""
+	if actual_branch_children_count > 0:
+		print("Calling center_grid...")
+		center_grid()
+		print("center_grid call finished.")
+	else:
+		print("Skipping center_grid as no branches were added to the scene tree.")
 
-		# Check against our key map
-		if difficulty_key_map.has(event.keycode):
-			selected_difficulty_str = difficulty_key_map[event.keycode]
-			new_difficulty_selected = true
-
-		if new_difficulty_selected:
-			if self.current_difficulty_str != selected_difficulty_str:
-				print("Difficulty changed to: %s" % selected_difficulty_str)
-				self.current_difficulty_str = selected_difficulty_str
-				load_level_for_current_difficulty() # Reload the level with new difficulty
-			else:
-				print("Difficulty %s already selected." % selected_difficulty_str)
+	if AudioManager: # Ensure AudioManager is capitalized correctly if that's its autoload name
+		AudioManager.load_and_play_music_by_difficulty(self.current_difficulty_str)
+		print("AudioManager instructed to play music for %s" % self.current_difficulty_str)
+	else:
+		printerr("AudioManager not found when trying to play music in load_level.")
+		
+	print("--- load_level_for_current_difficulty END for: %s ---" % self.current_difficulty_str)
 
 
-func _ready():
-	randomize()
-	
-	# self.current_difficulty_str is already initialized as a class var
-	print("Initial game difficulty from _ready(): %s" % self.current_difficulty_str)
-	load_level_for_current_difficulty() # This will handle all setup
 
+func _input(event: InputEvent):
+	if is_level_complete_animation_playing:
+		return
+
+	var difficulty_changed_by_hotkey = false
+	var new_selected_difficulty = ""
+
+	if event is InputEventKey and event.is_pressed() and not event.is_echo():
+		# Using event.keycode directly for comparison with your difficulty_key_map
+		var pressed_key = event.keycode 
+		if difficulty_key_map.has(pressed_key):
+			new_selected_difficulty = difficulty_key_map[pressed_key]
+			if new_selected_difficulty != current_difficulty_str:
+				current_difficulty_str = new_selected_difficulty
+				difficulty_changed_by_hotkey = true
+				print("Grid: Difficulty changed by hotkey to: " + current_difficulty_str)
+				
+				# Handle the input so it doesn't propagate further if a difficulty key was pressed
+				get_viewport().set_input_as_handled() 
+
+	if difficulty_changed_by_hotkey:
+		load_level_for_current_difficulty() # Reload the level with the new difficulty
+		if AudioManager: # Also update the music
+			AudioManager.load_and_play_music_by_difficulty(current_difficulty_str)
+		return # If difficulty changed, no need to process other inputs in this frame for branches
 
 func center_grid():
 	var screen_size = get_viewport_rect().size
@@ -146,8 +186,9 @@ func center_grid():
 
 
 func _process(_delta):
-	if Input.is_action_just_pressed("ui_mute"):  # "ui_mute" in Input Map
-		audio_manager.toggle_mute()
+	#if Input.is_action_just_pressed("ui_mute"):  # "ui_mute" in Input Map
+		#audio_manager.toggle_global_music_mute()
+		#get_viewport().set_input_as_handled()
 		
 	if Input.is_action_just_pressed("ui_accepted"):
 		print("Test triggered for difficulty: %s" % self.current_difficulty_str)
@@ -221,7 +262,7 @@ func init_branches(g_width: int, g_height: int, b_scene: PackedScene,
 		# Clear previous children before adding dummy (important if this is a retry scenario within _ready)
 		var children_to_remove_fallback = []
 		for child in get_children():
-			if child.name == "AudioManager" or child.name == "bg1_sprite": # Keep essentials
+			if child.name == "AudioManager" or child.name == "bg1": # Keep essentials
 				continue
 			if child is BranchNode: # USE class_name CHECK
 				children_to_remove_fallback.append(child)
@@ -255,7 +296,7 @@ func init_branches(g_width: int, g_height: int, b_scene: PackedScene,
 	# Clear previous children (Branches) before adding new ones
 	var children_to_remove_init = []
 	for child in get_children():
-		if child.name == "AudioManager" or child.name == "bg1_sprite": # Keep essentials
+		if child.name == "AudioManager" or child.name == "bg1": # Keep essentials
 			continue
 		if child is BranchNode: # USE class_name CHECK
 			children_to_remove_init.append(child)
@@ -300,8 +341,8 @@ func _on_branch_clicked(x: int, y: int):
 		print("Input disabled, level already complete.")
 		return
 	# Play the beep sound
-	if audio_manager:
-		audio_manager.sfx_player.play()
+	if AudioManager:
+		AudioManager.sfx_player.play()
 
 	var clicked_branch = branches[x][y]
 
