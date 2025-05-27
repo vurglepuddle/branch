@@ -10,6 +10,34 @@ const BranchType = preload("res://scripts/core/branch_types.gd").BranchType
 @export var branches: Array
 
 @onready var sprite: Sprite2D = $Sprite2D  # Fetch Sprite2D from the scene
+@onready var leaf_sprite: Sprite2D = $LeafSprite
+
+# Group 1: Straight Horizontal (0,1,0,1) or 3-way Down (0,1,1,1)
+const LEAVES_GROUP_1: Array[Texture2D] = [
+	preload("res://sprites/Leaf/1_Str_Horizontal_3-way_down_1.png"),
+	preload("res://sprites/Leaf/1_Str_Horizontal_3-way_down_2.png")
+]
+
+# Group 2: Straight Vertical (1,0,1,0) or 3-way Left (1,0,1,1)
+const LEAVES_GROUP_2: Array[Texture2D] = [
+	preload("res://sprites/Leaf/2_Str_Vertical_3-way_left_1.png"),
+	preload("res://sprites/Leaf/2_Str_Vertical_3-way_left_2.png")
+]
+
+# Group 3: Straight Horizontal (0,1,0,1) or 3-way Up (1,1,0,1)
+const LEAVES_GROUP_3: Array[Texture2D] = [
+	preload("res://sprites/Leaf/3_Str_Horizontal_3-way_up_1.png"),
+	preload("res://sprites/Leaf/3_Str_Horizontal_3-way_up_2.png")
+]
+
+# Group 4: Straight Vertical (1,0,1,0) or 3-way Right (1,1,1,0)
+const LEAVES_GROUP_4: Array[Texture2D] = [
+	preload("res://sprites/Leaf/4_Str_Vertical_3-way_right_1.png"),
+	preload("res://sprites/Leaf/4_Str_Vertical_3-way_right_2.png")
+]
+
+var _leaf_map: Dictionary = {}
+
 
 var textures = {
 	BranchType.BEND: {
@@ -121,6 +149,30 @@ func _ready():
 	sprite.scale = Vector2(1, 1)  # Ensure correct scaling
 	sprite.z_index = 1            # Ensure it's drawn above other visuals
 	update_texture()
+	
+	# ... existing _ready() code ...
+	if leaf_sprite == null:
+		printerr("Branch at (%s,%s) missing LeafSprite node!" % [grid_x, grid_y])
+	else:
+		leaf_sprite.visible = false # Ensure it's hidden initially
+
+	# Initialize _leaf_map (can also be done directly above, but _ready is fine)
+	# Key: String representation of the effective connections array [U,R,D,L]
+	# Straight Horizontal: [0,1,0,1]
+	_leaf_map["[0, 1, 0, 1]"] = [LEAVES_GROUP_1, LEAVES_GROUP_3] # Can use either group 1 or 3 for horizontal straight
+	# 3-way Down: [0,1,1,1]
+	_leaf_map["[0, 1, 1, 1]"] = [LEAVES_GROUP_1]
+	
+	# Straight Vertical: [1,0,1,0]
+	_leaf_map["[1, 0, 1, 0]"] = [LEAVES_GROUP_2, LEAVES_GROUP_4] # Can use either group 2 or 4 for vertical straight
+	# 3-way Left: [1,0,1,1]
+	_leaf_map["[1, 0, 1, 1]"] = [LEAVES_GROUP_2]
+	
+	# 3-way Up: [1,1,0,1]
+	_leaf_map["[1, 1, 0, 1]"] = [LEAVES_GROUP_3]
+	
+	# 3-way Right: [1,1,1,0]
+	_leaf_map["[1, 1, 1, 0]"] = [LEAVES_GROUP_4]
 	
 func set_state(new_state: String):
 		
@@ -410,3 +462,36 @@ func update_texture():
 	else:
 		return
 	
+func spawn_leaf_animation():
+	if leaf_sprite == null or not is_instance_valid(leaf_sprite):
+		return # No sprite to use
+
+	# Determine which leaf group to use based on CURRENT effective connections
+	# The 'connections' var already holds the effective connections after rotation
+	var effective_connections_str = str(connections) # Convert array [0,1,0,1] to string "[0, 1, 0, 1]"
+
+	if not _leaf_map.has(effective_connections_str):
+		# print("Branch (%s,%s) type/rotation %s not eligible for leaves." % [grid_x, grid_y, effective_connections_str])
+		return # This shape doesn't get leaves
+
+	var possible_leaf_groups = _leaf_map[effective_connections_str]
+	if possible_leaf_groups.is_empty():
+		return
+
+	# If multiple groups are possible (e.g., for straight pieces), pick one group randomly
+	var selected_leaf_texture_array = possible_leaf_groups[randi() % possible_leaf_groups.size()]
+	
+	if selected_leaf_texture_array.is_empty():
+		return # Should not happen if constants are defined
+
+	# Small chance of no leaf appearing
+	if randf() < 0.1: # 10% chance of no leaf
+		leaf_sprite.visible = false
+		return
+
+	# Pick a random leaf from the selected group
+	var random_leaf_texture: Texture2D = selected_leaf_texture_array[randi() % selected_leaf_texture_array.size()]
+
+	leaf_sprite.texture = random_leaf_texture
+	leaf_sprite.visible = true
+	# print("Branch (%s,%s) spawning leaf from group matching %s" % [grid_x, grid_y, effective_connections_str])
