@@ -13,6 +13,7 @@ config_version=5
 config/name="VETKA"
 run/main_scene="res://scenes/Grid.tscn"
 config/features=PackedStringArray("4.3", "Mobile")
+boot_splash/show_image=false
 config/icon="res://icons/app icon.png"
 
 [display]
