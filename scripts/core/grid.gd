@@ -33,7 +33,7 @@ var difficulty_key_map = {
 	KEY_6: "torrero"
 }
 
-var current_difficulty_str: String = "expert"
+var current_difficulty_str: String = "torrero"
 var is_toroidal_grid: bool = false # NEW: Flag for toroidal mode
 
 # The size of the grid
@@ -400,6 +400,7 @@ func check_win_condition():
 	if self.all_connected: # Check class-level variable
 		is_level_complete_animation_playing = true # Set flag
 		print("🎉 CONGRATULATIONS! 🎉")
+		call_deferred("start_leaf_spawn_sequence")
 		call_deferred("start_blossom_sequence")
 
 func start_blossom_sequence():
@@ -419,9 +420,6 @@ func start_blossom_sequence():
 
 	# Shuffle the list to make the order random beyond the first few
 	alive_terminal_branches.shuffle()
-
-	# --- Orchestrate the animation ---
-	# We'll use a loop and timers.
 
 	var overall_animation_delay_accumulator: float = 0.0
 	var max_initial_delay: float = 4.0 # Max N seconds (was 5, reduced to make total time reasonable)
@@ -488,6 +486,57 @@ func _finish_level_complete_sequence(timer_node: Timer):
 
 	if is_instance_valid(timer_node):
 		timer_node.queue_free() # Clean up the final timer
+
+func start_leaf_spawn_sequence():
+	var eligible_leaf_branches = []
+	for x in range(grid_width):
+		for y in range(grid_height):
+			var branch: BranchNode = branches[x][y]
+			# Leaves for STRAIGHT and THREE_WAY, not TERMINAL or BEND, and must be ALIVE
+			if (branch.branch_type == BranchType.STRAIGHT or branch.branch_type == BranchType.THREE) \
+			   and branch.state == "alive":
+				eligible_leaf_branches.append(branch)
+
+	if eligible_leaf_branches.is_empty():
+		print("No eligible branches found for leaf spawning.")
+		return
+
+	eligible_leaf_branches.shuffle()
+
+	var leaf_delay_accumulator: float = 0.0
+	var base_leaf_delay: float = 0.066 # Approx 4 frames at 60fps (1/60 * 4)
+									 # Or 0.05 for 3 frames at 60fps
+
+	for i in range(eligible_leaf_branches.size()):
+		var branch_to_leaf: BranchNode = eligible_leaf_branches[i]
+		
+		# Stagger the leaf spawning slightly
+		var current_leaf_spawn_delay = leaf_delay_accumulator + randf_range(base_leaf_delay * 0.5, base_leaf_delay * 1.5)
+
+		var leaf_timer = Timer.new()
+		leaf_timer.wait_time = current_leaf_spawn_delay
+		leaf_timer.one_shot = true
+		leaf_timer.connect("timeout", Callable(self, "_spawn_single_leaf").bind(branch_to_leaf, leaf_timer))
+		add_child(leaf_timer)
+		leaf_timer.start()
+
+		# Increment accumulator for next leaf, ensuring some cascade
+		leaf_delay_accumulator += base_leaf_delay * randf_range(0.2, 0.5) # Smaller increment for more overlap
+		
+		# Cap total leaf sequence duration roughly if needed, though shuffling helps
+		if leaf_delay_accumulator > 5.0: # e.g., don't let leaf sequence drag on too long
+			pass # Or break, or stop incrementing leaf_delay_accumulator
+
+	print("Leaf spawn sequence initiated for %s branches." % eligible_leaf_branches.size())
+
+
+func _spawn_single_leaf(branch: BranchNode, timer_node: Timer):
+	if is_instance_valid(branch):
+		branch.spawn_leaf_animation() # Call the method on the BranchNode
+	if is_instance_valid(timer_node):
+		timer_node.queue_free()
+
+
 
 func run_batch_generation_test(difficulty_to_test: String, num_runs: int = 100):
 	if not difficulty_levels.has(difficulty_to_test):
