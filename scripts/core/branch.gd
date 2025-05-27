@@ -90,23 +90,11 @@ func play_terminal_blossom():
 			anim_sprite.visible = true # Make it visible NOW
 			anim_sprite.animation = animation_name # Set the animation
 			anim_sprite.play() # Play it from the beginning
-			print("Branch at (%s,%s) playing animation: %s" % [grid_x, grid_y, animation_name])
+			#print("Branch at (%s,%s) playing animation: %s" % [grid_x, grid_y, animation_name])
 		else:
 			printerr("Branch at (%s,%s) animation '%s' not found in SpriteFrames." % [grid_x, grid_y, animation_name])
 	else:
 		printerr("Branch at (%s,%s) missing AnimatedSprite2D node!" % [grid_x, grid_y])
-	
-		#match rotation_index:
-		#0:
-			#animation_name = "down_blossom"
-		#1:
-			#animation_name = "left_blossom"
-		#2:
-			#animation_name = "up_blossom"
-		#3:
-			#animation_name = "right_blossom"
-	#if animation_name != "":
-		#$AnimatedSprite2D.play(animation_name)
 
 
 # Default connections for rotation 0
@@ -148,7 +136,7 @@ func _input(event):
 			elif event.button_index == MOUSE_BUTTON_RIGHT:
 				emit_signal("branch_right_clicked", grid_x, grid_y)
 
-func propagate_connection(grid_width: int, grid_height: int, branches: Array):
+func propagate_connection(p_grid_width: int, p_grid_height: int, p_branches: Array, p_is_toroidal: bool):
 	# Skip propagation if the tile is dead or not connected to the source
 	if state != "alive" or not connected_to_source:
 		return
@@ -158,12 +146,31 @@ func propagate_connection(grid_width: int, grid_height: int, branches: Array):
 		if connections[i] == 1:  # This branch has an outgoing connection
 			var dx = directions[i][0]
 			var dy = directions[i][1]
-			var neighbor_x = grid_x + dx
-			var neighbor_y = grid_y + dy
-
-			# Bounds check
-			if neighbor_x >= 0 and neighbor_x < grid_width and neighbor_y >= 0 and neighbor_y < grid_height:
-				var neighbor = branches[neighbor_x][neighbor_y]
+			var raw_neighbor_x = grid_x + dx
+			var raw_neighbor_y = grid_y + dy
+			var neighbor_x: int
+			var neighbor_y: int
+			
+			if p_is_toroidal:
+				neighbor_x = (raw_neighbor_x % p_grid_width + p_grid_width) % p_grid_width
+				neighbor_y = (raw_neighbor_y % p_grid_height + p_grid_height) % p_grid_height
+			else:
+				neighbor_x = raw_neighbor_x
+				neighbor_y = raw_neighbor_y
+			
+			var is_valid_neighbor_pos = false
+			if p_is_toroidal: # For toroidal, wrapped coordinates are always logically "on the grid"
+				is_valid_neighbor_pos = true
+			else: # For non-toroidal, check bounds
+				is_valid_neighbor_pos = (neighbor_x >= 0 and neighbor_x < p_grid_width and \
+																				 neighbor_y >= 0 and neighbor_y < p_grid_height)
+				
+			if is_valid_neighbor_pos: # Defensive check for array bounds, though logic should ensure this.
+				if neighbor_x < 0 or neighbor_x >= p_branches.size() or \
+				neighbor_y < 0 or neighbor_y >= p_branches[neighbor_x].size():
+					printerr("PROPAGATE: Calculated neighbor (%s, %s) for branch (%s, %s) is out of p_branches bounds! Toroidal: %s" % [neighbor_x, neighbor_y, grid_x, grid_y, p_is_toroidal])	
+					continue
+				var neighbor = p_branches[neighbor_x][neighbor_y]
 
 				# Skip EMPTY tiles
 				if neighbor.branch_type == BranchType.EMPTY:
@@ -174,57 +181,112 @@ func propagate_connection(grid_width: int, grid_height: int, branches: Array):
 					if not neighbor.connected_to_source:  # Avoid redundant propagation
 						neighbor.connected_to_source = true
 						neighbor.set_state("alive")
-						neighbor.propagate_connection(grid_width, grid_height, branches)
+						neighbor.propagate_connection(p_grid_width, p_grid_height, p_branches, p_is_toroidal)
 
-func disconnect_if_isolated(grid_width: int, grid_height: int, branches: Array):
+func disconnect_if_isolated(p_grid_width: int, p_grid_height: int, p_branches: Array, p_is_toroidal: bool):
+	if state == "dead": # Already dead, nothing to do
+		return
+	var is_still_connected_to_live_source_path = false
 
 	# Check if still connected to any alive neighbor
 	var directions = [[0, -1], [1, 0], [0, 1], [-1, 0]]
 	for i in range(4):
-		var dx = directions[i][0]
-		var dy = directions[i][1]
-		var neighbor_x = grid_x + dx
-		var neighbor_y = grid_y + dy
+		if connections[i] == 1:
+			var dx = directions[i][0]
+			var dy = directions[i][1]
+			var raw_neighbor_x = grid_x + dx
+			var raw_neighbor_y = grid_y + dy
+			var neighbor_x: int
+			var neighbor_y: int
+			if p_is_toroidal:
+				neighbor_x = (raw_neighbor_x % p_grid_width + p_grid_width) % p_grid_width
+				neighbor_y = (raw_neighbor_y % p_grid_height + p_grid_height) % p_grid_height
+			else:
+				neighbor_x = raw_neighbor_x
+				neighbor_y = raw_neighbor_y
+				
+			var is_valid_lookup_pos = false
+			if p_is_toroidal:
+				is_valid_lookup_pos = true
+			else:
+				is_valid_lookup_pos = (neighbor_x >= 0 and neighbor_x < p_grid_width and \
+									   neighbor_y >= 0 and neighbor_y < p_grid_height)
+			if is_valid_lookup_pos:
+				if neighbor_x >= 0 and neighbor_x < p_branches.size() and \
+				   neighbor_y >= 0 and neighbor_y < p_branches[neighbor_x].size():
+					var neighbor = p_branches[neighbor_x][neighbor_y]
+					# Check if neighbor connects back AND is alive AND is connected to source
+					if neighbor.connections[(i + 2) % 4] == 1 and \
+					   neighbor.state == "alive" and \
+					   neighbor.connected_to_source:
+						is_still_connected_to_live_source_path = true
+						break # Found a live connection path, no need to check further
+	if not is_still_connected_to_live_source_path:
+		# No connection to a live source path found, so this branch becomes dead
+		set_state("dead") # This will call update_texture
+		connected_to_source = false # Crucial: if it's dead, it's not connected
+		
+		for i_rec in range(4):
+			if connections[i_rec] == 1: # Check actual openings of *this* newly dead branch
+				var dx_rec = directions[i_rec][0]
+				var dy_rec = directions[i_rec][1]
+				# ... (calculate neighbor_x_rec, neighbor_y_rec with toroidal logic) ...
+				var raw_n_x_rec = grid_x + dx_rec # Use grid_x of *this* branch
+				var raw_n_y_rec = grid_y + dy_rec # Use grid_y of *this* branch
+				var n_x_rec: int
+				var n_y_rec: int
+				if p_is_toroidal:
+					n_x_rec = (raw_n_x_rec % p_grid_width + p_grid_width) % p_grid_width
+					n_y_rec = (raw_n_y_rec % p_grid_height + p_grid_height) % p_grid_height
+				else:
+					n_x_rec = raw_n_x_rec
+					n_y_rec = raw_n_y_rec
+				
+				var is_valid_rec_lookup = false
+				if p_is_toroidal: is_valid_rec_lookup = true
+				else: is_valid_rec_lookup = (n_x_rec >=0 and n_x_rec < p_grid_width and n_y_rec >=0 and n_y_rec < p_grid_height)
 
-		if neighbor_x >= 0 and neighbor_x < grid_width and neighbor_y >= 0 and neighbor_y < grid_height:
-			var neighbor = branches[neighbor_x][neighbor_y]
-			if neighbor.state == "alive" and neighbor.connected_to_source:
-				return  # Remain alive if connected to a valid neighbor
+				if is_valid_rec_lookup and \
+					n_x_rec < p_branches.size() and n_y_rec < p_branches[n_x_rec].size():
+					var neighbor_rec = p_branches[n_x_rec][n_y_rec]
+					# If neighbor was connected to this now-dead branch, and is alive, it might become isolated
+					if neighbor_rec.connections[(i_rec+2)%4] == 1 and neighbor_rec.state == "alive":
+						# Pass p_is_toroidal to the recursive call
+						neighbor_rec.disconnect_if_isolated(p_grid_width, p_grid_height, p_branches, p_is_toroidal)
 
-	# If no connections, set to dead
-	set_state("dead")
-	connected_to_source = false
+func check_disconnected(p_grid_width: int, p_grid_height: int, p_branches: Array, p_is_toroidal: bool) -> bool:
+	var directions = [[0, -1], [1, 0], [0, 1], [-1, 0]]
 
-	# Recursively check neighbors
-	for i in range(4):
-		var dx = directions[i][0]
-		var dy = directions[i][1]
-		var neighbor_x = grid_x + dx
-		var neighbor_y = grid_y + dy
+	for i in range(4): # Iterate through UP, RIGHT, DOWN, LEFT
+		if connections[i] == 1: # If this branch has an opening
+			var dx = directions[i][0]
+			var dy = directions[i][1]
+			var raw_neighbor_x = grid_x + dx
+			var raw_neighbor_y = grid_y + dy
+			var neighbor_x: int
+			var neighbor_y: int
 
-		if neighbor_x >= 0 and neighbor_x < grid_width and neighbor_y >= 0 and neighbor_y < grid_height:
-			var neighbor = branches[neighbor_x][neighbor_y]
-			if neighbor.state == "alive":
-				neighbor.disconnect_if_isolated(grid_width, grid_height, branches)
+			if p_is_toroidal:
+				neighbor_x = (raw_neighbor_x % p_grid_width + p_grid_width) % p_grid_width
+				neighbor_y = (raw_neighbor_y % p_grid_height + p_grid_height) % p_grid_height
+			else:
+				neighbor_x = raw_neighbor_x
+				neighbor_y = raw_neighbor_y
+			
+			var is_valid_lookup_pos = false
+			if p_is_toroidal: is_valid_lookup_pos = true
+			else: is_valid_lookup_pos = (neighbor_x >=0 and neighbor_x < p_grid_width and \
+										neighbor_y >=0 and neighbor_y < p_grid_height)
 
-func check_disconnected():
-	# Check if the tile is connected to any alive neighbors
-	var connected = false
-	var directions = [[0, -1], [1, 0], [0, 1], [-1, 0]]  # UP, RIGHT, DOWN, LEFT
-
-	for i in range(4):
-		var dx = directions[i][0]
-		var dy = directions[i][1]
-		var neighbor_x = grid_x + dx
-		var neighbor_y = grid_y + dy
-
-		if neighbor_x < 0 or neighbor_x >= grid_width or neighbor_y < 0 or neighbor_y >= grid_height:
-			continue
-
-		var neighbor = branches[neighbor_x][neighbor_y]
-		if neighbor.state == "alive" and neighbor.connected_to_source: 
-			connected = true
-			break
+			if is_valid_lookup_pos:
+				if neighbor_x < p_branches.size() and neighbor_y < p_branches[neighbor_x].size(): # Bounds check
+					var neighbor = p_branches[neighbor_x][neighbor_y]
+					if neighbor.connections[(i + 2) % 4] == 1 and \
+					   neighbor.state == "alive" and \
+					   neighbor.connected_to_source:
+						return false # Found a live connection, so NOT disconnected
+	
+	return true # No live, properly connected neighbor found, so it IS disconnected
 
 func get_connections() -> Array:
 	return connections
@@ -244,58 +306,93 @@ func rotate_connections(current_connections: Array) -> Array:
 		current_connections[2]   # DOWN becomes LEFT
 	]
 	
-func mark_connected(grid_width: int, grid_height: int, branches: Array):
-	if connected_to_source or state != "alive":
-		return  # Already marked or not alive
+func mark_connected(p_grid_width: int, p_grid_height: int, p_branches: Array, p_is_toroidal: bool):
 
+	if connected_to_source: # If already marked, or if not alive and we only mark alive ones
+		return
+		
 	connected_to_source = true  # Mark this tile as connected
 
-	# Recursively mark neighbors
-	var directions = [[0, -1], [1, 0], [0, 1], [-1, 0]]  # UP, RIGHT, DOWN, LEFT
+	var directions = [[0, -1], [1, 0], [0, 1], [-1, 0]]
 	for i in range(4):
-		var dx = directions[i][0]
-		var dy = directions[i][1]
-		var neighbor_x = grid_x + dx
-		var neighbor_y = grid_y + dy
+		if connections[i] == 1: # If this branch has an opening
+			var dx = directions[i][0]
+			var dy = directions[i][1]
+			# ... (calculate neighbor_x, neighbor_y with toroidal logic as above) ...
+			var raw_neighbor_x = grid_x + dx
+			var raw_neighbor_y = grid_y + dy
+			var neighbor_x: int; var neighbor_y: int
+			if p_is_toroidal:
+				neighbor_x = (raw_neighbor_x % p_grid_width + p_grid_width) % p_grid_width
+				neighbor_y = (raw_neighbor_y % p_grid_height + p_grid_height) % p_grid_height
+			else:
+				neighbor_x = raw_neighbor_x
+				neighbor_y = raw_neighbor_y
 
-		if neighbor_x >= 0 and neighbor_x < grid_width and neighbor_y >= 0 and neighbor_y < grid_height:
-			var neighbor = branches[neighbor_x][neighbor_y]
-			if get_connections()[i] == 1 and neighbor.get_connections()[(i + 2) % 4] == 1:
-				neighbor.mark_connected(grid_width, grid_height, branches)
+			var is_valid_lookup_pos = false
+			if p_is_toroidal: is_valid_lookup_pos = true
+			else: is_valid_lookup_pos = (neighbor_x >=0 and neighbor_x < p_grid_width and \
+										neighbor_y >=0 and neighbor_y < p_grid_height)
 
-func propagate_disconnection(grid_width: int, grid_height: int, branches: Array):
-	if state == "dead":
-		return  # Skip already dead tiles
+			if is_valid_lookup_pos:
+				if neighbor_x < p_branches.size() and neighbor_y < p_branches[neighbor_x].size():
+					var neighbor = p_branches[neighbor_x][neighbor_y]
+					# If this connects to neighbor AND neighbor connects back
+					if neighbor.connections[(i + 2) % 4] == 1:
+						# Recursive call, passing p_is_toroidal
+						neighbor.mark_connected(p_grid_width, p_grid_height, p_branches, p_is_toroidal)
 
-	set_state("dead")  # Mark this tile as dead
-	connected_to_source = false
+func propagate_disconnection(p_grid_width: int, p_grid_height: int, p_branches: Array, p_is_toroidal: bool):
+	if state == "dead" and not connected_to_source: # If already fully dead and marked disconnected
+		return
 
-	# Recursively propagate to neighbors
-	var directions = [[0, -1], [1, 0], [0, 1], [-1, 0]]  # UP, RIGHT, DOWN, LEFT
+	set_state("dead") # Mark this tile as dead
+	connected_to_source = false # Explicitly mark as not connected
+
+	var directions = [[0, -1], [1, 0], [0, 1], [-1, 0]]
 	for i in range(4):
-		var dx = directions[i][0]
-		var dy = directions[i][1]
-		var neighbor_x = grid_x + dx
-		var neighbor_y = grid_y + dy
+		# We need to check neighbors that *were* connected to this now-dead tile.
+		if connections[i] == 1: # If this branch HAD an opening
+			var dx = directions[i][0]
+			var dy = directions[i][1]
+			# ... (calculate neighbor_x, neighbor_y with toroidal logic) ...
+			var raw_neighbor_x = grid_x + dx
+			var raw_neighbor_y = grid_y + dy
+			var neighbor_x: int; var neighbor_y: int
+			if p_is_toroidal:
+				neighbor_x = (raw_neighbor_x % p_grid_width + p_grid_width) % p_grid_width
+				neighbor_y = (raw_neighbor_y % p_grid_height + p_grid_height) % p_grid_height
+			else:
+				neighbor_x = raw_neighbor_x
+				neighbor_y = raw_neighbor_y
+			
+			var is_valid_lookup_pos = false
+			if p_is_toroidal: is_valid_lookup_pos = true
+			else: is_valid_lookup_pos = (neighbor_x >=0 and neighbor_x < p_grid_width and \
+										neighbor_y >=0 and neighbor_y < p_grid_height)
 
-		if neighbor_x >= 0 and neighbor_x < grid_width and neighbor_y >= 0 and neighbor_y < grid_height:
-			var neighbor = branches[neighbor_x][neighbor_y]
-			if neighbor.state == "alive" and not neighbor.connected_to_source:
-				neighbor.propagate_disconnection(grid_width, grid_height, branches)
+			if is_valid_lookup_pos:
+				if neighbor_x < p_branches.size() and neighbor_y < p_branches[neighbor_x].size():
+					var neighbor = p_branches[neighbor_x][neighbor_y]
+					# If neighbor connected back to this tile AND is currently alive
+					if neighbor.connections[(i + 2) % 4] == 1 and neighbor.state == "alive":
+						neighbor.disconnect_if_isolated(p_grid_width, p_grid_height, p_branches, p_is_toroidal)
 
 func update_texture():
 	if sprite == null:
-		#print("Error: Sprite2D is null for tile at (", grid_x, ", ", grid_y, ")")
 		return
 		
 	# Ensure branch_type is valid
 	if not branch_type in textures:
-		print("Error: Invalid branch_type: ", branch_type)
+		#print("Error: Invalid branch_type: ", branch_type)
+		if textures.has(BranchType.EMPTY) and textures[BranchType.EMPTY].has("dead"):
+			if textures[BranchType.EMPTY]["dead"].size() > 0:
+				sprite.texture = textures[BranchType.EMPTY]["dead"][0]
 		return
 		
 	# Ensure state is valid
 	if not state in textures[branch_type]:
-		print("Error: Invalid state: ", state, " for branch type: ", branch_type)
+		#print("Error: Invalid state: ", state, " for branch type: ", branch_type)
 		return
 		
 	# Ensure rotation_index is valid
@@ -312,22 +409,4 @@ func update_texture():
 		sprite.z_index = 1           # Ensure correct rendering order
 	else:
 		return
-		#print("Warning: Texture is null for branch type ", branch_type, " and state ", state, " at (", grid_x, ", ", grid_y, ")")
-
-#func update_texture():
-	#if sprite == null:
-		##print("Error: Sprite2D is null for tile at (", grid_x, ", ", grid_y, ")")
-		#return
-	#
-	#if state in textures[branch_type]:
-		#var texture_path = textures[branch_type][state][rotation_index]
-		#if texture_path != null:
-			#sprite.texture = texture_path
-			#sprite.visible = true
-			#sprite.scale = Vector2(1, 1)  # Reset scale to 1:1
-			#sprite.z_index = 1           # Ensure correct rendering order
-			##print("Texture updated for tile at (", grid_x, ", ", grid_y, ") to texture: ", sprite.texture.resource_path)
-		##else:
-			##print("Warning: Texture is null for branch type ", branch_type, " and state ", state, " at (", grid_x, ", ", grid_y, ")")
-	#else:
-		#print("Error: Texture missing for state ", state, " at (", grid_x, ", ", grid_y, ")")
+	

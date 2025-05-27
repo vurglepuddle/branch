@@ -3,10 +3,25 @@ extends Node
 
 const BranchType = preload("res://scripts/core/branch_types.gd").BranchType
 
+func get_toroidal_neighbor_coord(val: int, max_val: int) -> int:
+	# Handles positive and negative overflow for 1D wrap-around
+	# E.g., if val = -1, max_val = 6, returns 5
+	# E.g., if val = 6, max_val = 6, returns 0
+	return (val % max_val + max_val) % max_val
+
+func deep_copy_dictionary_of_arrays(original_dict: Dictionary) -> Dictionary:
+	var new_dict = {}
+	for key in original_dict:
+		if original_dict[key] is Array:
+			new_dict[key] = original_dict[key].duplicate(true) # Deep copy for arrays
+		else:
+			new_dict[key] = original_dict[key] # Shallow copy for other types (if any)
+	return new_dict
+
 # Helper function for graph traversal (BFS) to find all cells reachable from start_node
 # through the connections defined in `all_connections_map`.
 func find_reachable_cell_keys(start_x: int, start_y: int, all_connections_map: Dictionary,
-							 grid_width: int, grid_height: int) -> Dictionary:
+							 grid_width: int, grid_height: int, p_is_toroidal: bool) -> Dictionary:
 	var reachable_keys = {} # Stores "x,y" string keys of reachable cells
 	var queue = []          # Our queue for BFS
 
@@ -21,8 +36,8 @@ func find_reachable_cell_keys(start_x: int, start_y: int, all_connections_map: D
 	reachable_keys[start_key] = true # Mark source as reachable
 
 	var simple_dirs_map = [[0, -1], [1, 0], [0, 1], [-1, 0]] # UP, RIGHT, DOWN, LEFT (dx, dy)
-
 	var head = 0 # Use an index for the queue to avoid pop_front() performance issues with large arrays
+	
 	while head < queue.size():
 		var current_cell_pos = queue[head]
 		head += 1
@@ -41,33 +56,64 @@ func find_reachable_cell_keys(start_x: int, start_y: int, all_connections_map: D
 
 		for dir_idx in range(4): # 0:UP, 1:RIGHT, 2:DOWN, 3:LEFT
 			if cell_actual_connections[dir_idx] == 1: # If current cell has an outgoing connection in dir_idx
-				var nx = cx + simple_dirs_map[dir_idx][0]
-				var ny = cy + simple_dirs_map[dir_idx][1]
-				var n_key = "%s,%s" % [nx, ny]
-
-				# Check if neighbor is valid, part of the connection map, and not yet visited
-				if is_valid_position(nx, ny, grid_width, grid_height) and \
-				   all_connections_map.has(n_key) and \
-				   not reachable_keys.has(n_key):
+				var nx_raw = cx + simple_dirs_map[dir_idx][0]
+				var ny_raw = cy + simple_dirs_map[dir_idx][1]
+				var nx: int
+				var ny: int
+				#var n_key = "%s,%s" % [nx, ny]
+				
+				var is_valid_lookup_pos = false
+				if p_is_toroidal:
+					nx = get_toroidal_neighbor_coord(nx_raw, grid_width)
+					ny = get_toroidal_neighbor_coord(ny_raw, grid_height)
+					is_valid_lookup_pos = true # Wrapped coordinates are always "valid" for key lookup
+				else:
+					nx = nx_raw
+					ny = ny_raw
+					is_valid_lookup_pos = is_valid_position(nx, ny, grid_width, grid_height)
+				
+				if is_valid_lookup_pos:
+					var n_key = "%s,%s" % [nx, ny] # Key uses potentially wrapped coords
 					
-					# IMPORTANT: Also check if the neighbor actually connects BACK.
-					# The `all_connections_map` should represent bidirectional solved links.
-					var neighbor_actual_connections = all_connections_map[n_key]
-					var opposite_dir_for_neighbor = (dir_idx + 2) % 4 # e.g., if dir_idx is RIGHT (1), opposite is LEFT (3)
-					
-					if neighbor_actual_connections[opposite_dir_for_neighbor] == 1:
-						reachable_keys[n_key] = true # Mark neighbor as reachable
-						queue.append({"x": nx, "y": ny}) # Add to queue for further exploration
+					if all_connections_map.has(n_key) and not reachable_keys.has(n_key):
+						var neighbor_actual_connections = all_connections_map[n_key]
+						var opposite_dir_for_neighbor = (dir_idx + 2) % 4
 						
+						if neighbor_actual_connections[opposite_dir_for_neighbor] == 1:
+							reachable_keys[n_key] = true
+							queue.append({"x": nx, "y": ny}) # Add with potentially wrapped coords
+					
 	return reachable_keys
 
 # Helper function to get direction from (x1,y1) to (x2,y2)
-func get_direction(x1: int, y1: int, x2: int, y2: int) -> int:
-	if x2 > x1: return 1      # RIGHT
-	if x2 < x1: return 3      # LEFT
-	if y2 > y1: return 2      # DOWN
-	if y2 < y1: return 0      # UP
-	return -1                 # Same position (error)
+func get_direction(x1: int, y1: int, x2: int, y2: int, p_grid_width: int = 0, p_grid_height: int = 0, p_is_toroidal: bool = false) -> int:
+	if not p_is_toroidal:
+		if x2 > x1: return 1      # RIGHT
+		if x2 < x1: return 3      # LEFT
+		if y2 > y1: return 2      # DOWN
+		if y2 < y1: return 0      # UP
+	else:
+		var dx = x2 - x1
+		var dy = y2 - y1
+		
+		# Wrap dx
+		if abs(dx) > p_grid_width / 2:
+			if dx > 0: dx -= p_grid_width
+			else: dx += p_grid_width
+		
+		# Wrap dy
+		if abs(dy) > p_grid_height / 2:
+			if dy > 0: dy -= p_grid_height
+			else: dy += p_grid_height
+		
+		if abs(dx) > abs(dy): # Primarily horizontal movement
+			if dx > 0: return 1 # RIGHT
+			else: return 3      # LEFT
+		else: # Primarily vertical movement (or equal, prioritize vertical)
+			if dy < 0: return 0 # UP
+			else: return 2      # DOWN
+		
+	return -1 # Should not happen if distinct points
 
 # Helper function to check if position is within grid bounds
 func is_valid_position(x: int, y: int, width: int, height: int) -> bool:
@@ -104,10 +150,10 @@ func degrade_to_three_connections(four_conn_array: Array) -> Array:
 		three_conn_array[actual_dir_to_remove] = 0
 	return three_conn_array
 
-
-func generate_solvable_puzzle(grid_width: int, grid_height: int, branch_scene: PackedScene, # Args 1, 2, 3
-							  prim_initial_density_factor: float = 0.85,  # Arg 4 (new)
-							  prim_min_target_tiles: int = 10) -> Dictionary: # Arg 5 (new)
+func generate_solvable_puzzle(grid_width: int, grid_height: int, branch_scene: PackedScene,
+							  prim_initial_density_factor: float = 0.85,
+							  prim_min_target_tiles: int = 10,
+							  p_is_toroidal: bool = false) -> Dictionary:
 	var final_branches_grid = []
 	for x in range(grid_width):
 		final_branches_grid.append([])
@@ -132,117 +178,286 @@ func generate_solvable_puzzle(grid_width: int, grid_height: int, branch_scene: P
 	var cells_in_tree_count = 1
 	var prim_directions = [[0, -1, 0], [1, 0, 1], [0, 1, 2], [-1, 0, 3]] 
 
-	for dir_info in prim_directions:
-		var nx = source_x + dir_info[0]
-		var ny = source_y + dir_info[1]
-		if is_valid_position(nx, ny, grid_width, grid_height):
-			frontier.append({"x": nx, "y": ny, "parent_x": source_x, "parent_y": source_y})
-
 	# --- 1. Grow the tree (Prim's algorithm variant) ---
 
 	for dir_info in prim_directions:
-		var nx = source_x + dir_info[0]
-		var ny = source_y + dir_info[1]
-		if is_valid_position(nx, ny, grid_width, grid_height):
-			frontier.append({"x": nx, "y": ny, "parent_x": source_x, "parent_y": source_y})
-
+		var nx_raw = source_x + dir_info[0]
+		var ny_raw = source_y + dir_info[1]
+		var nx: int; var ny: int
+		
+		if p_is_toroidal:
+			nx = get_toroidal_neighbor_coord(nx_raw, grid_width)
+			ny = get_toroidal_neighbor_coord(ny_raw, grid_height)
+			# For toroidal, neighbor always "exists" logically after wrapping.
+			# Key will be based on wrapped coords. If it's the source itself, it's already in tree.
+			if not ("%s,%s" % [nx, ny] == source_key_str): # Avoid adding source to frontier from itself
+				frontier.append({"x": nx, "y": ny, "parent_x": source_x, "parent_y": source_y})
+		else:
+			nx = nx_raw
+			ny = ny_raw
+			if is_valid_position(nx, ny, grid_width, grid_height):
+				frontier.append({"x": nx, "y": ny, "parent_x": source_x, "parent_y": source_y})
+				
 	while frontier.size() > 0 and cells_in_tree_count < num_active_tiles_target_for_prim:
 		var rand_idx = randi() % frontier.size()
 		var current_prospect = frontier[rand_idx]
 		frontier.remove_at(rand_idx)
+		
 		var x = current_prospect.x; var y = current_prospect.y
 		var cell_key = "%s,%s" % [x,y]
+		
 		if initial_active_cell_keys.has(cell_key): continue
+		
 		initial_active_cell_keys[cell_key] = true
 		cell_tree_connections[cell_key] = [0,0,0,0] 
 		cells_in_tree_count += 1
 		var parent_x = current_prospect.parent_x; var parent_y = current_prospect.parent_y
 		var parent_key = "%s,%s" % [parent_x, parent_y]
-		var dir_to_current = get_direction(parent_x, parent_y, x, y) 
-		var dir_to_parent = (dir_to_current + 2) % 4                 
-		cell_tree_connections[parent_key][dir_to_current] = 1
-		cell_tree_connections[cell_key][dir_to_parent] = 1
+		
+		var dir_to_current = get_direction(parent_x, parent_y, x, y, grid_width, grid_height, p_is_toroidal)
+		var dir_to_parent = (dir_to_current + 2) % 4       
+		if dir_to_current != -1: # Ensure valid direction 
+			cell_tree_connections[parent_key][dir_to_current] = 1
+			cell_tree_connections[cell_key][dir_to_parent] = 1
+		else:
+			printerr("Prim's: Could not determine direction between parent (%s,%s) and child (%s,%s)" % [parent_x, parent_y, x,y])
+			
 		for dir_info in prim_directions:
-			var nx = x + dir_info[0]; var ny = y + dir_info[1]
-			if is_valid_position(nx, ny, grid_width, grid_height) and not initial_active_cell_keys.has("%s,%s" % [nx,ny]):
+			var nx_raw = x + dir_info[0]
+			var ny_raw = y + dir_info[1]
+			var nx: int; var ny: int
+			var consider_neighbor = false
+			
+			if p_is_toroidal:
+				nx = get_toroidal_neighbor_coord(nx_raw, grid_width)
+				ny = get_toroidal_neighbor_coord(ny_raw, grid_height)
+				if not initial_active_cell_keys.has("%s,%s" % [nx,ny]): # Check with wrapped key
+					consider_neighbor = true
+			else: # Non-toroidal
+				nx = nx_raw
+				ny = ny_raw
+				if is_valid_position(nx, ny, grid_width, grid_height) and \
+				   not initial_active_cell_keys.has("%s,%s" % [nx,ny]):
+					consider_neighbor = true
+					
+			if consider_neighbor:
 				var in_frontier = false
 				for f_item in frontier:
-					if f_item.x == nx and f_item.y == ny: in_frontier = true; break
-				if not in_frontier: frontier.append({"x": nx, "y": ny, "parent_x": x, "parent_y": y})
-	# --- End of 1. Grow the tree ---
-
-	# --- 2. Post-process cell_tree_connections to eliminate 4-way junctions ---
-	var keys_from_tree_gen = cell_tree_connections.keys() # Iterate on a copy of keys
-	var simple_dirs_map_degradation = [[0, -1], [1, 0], [0, 1], [-1, 0]] 
+					if f_item.x == nx and f_item.y == ny:
+						in_frontier = true; break
+				if not in_frontier:
+					frontier.append({"x": nx, "y": ny, "parent_x": x, "parent_y": y})
+			
+		# --- End of 1. Grow the tree ---
+		# --- 2. Post-process cell_tree_connections to eliminate 4-way junctions ---
+	var keys_from_tree_gen = cell_tree_connections.keys()
+	var simple_dirs_map_degradation = [[0, -1], [1, 0], [0, 1], [-1, 0]]
 
 	for cell_key_str in keys_from_tree_gen:
-		if not cell_tree_connections.has(cell_key_str): continue # Cell might have been removed if logic changes
+		if not cell_tree_connections.has(cell_key_str): continue
 		var coords = cell_key_str.split(","); var current_x = int(coords[0]); var current_y = int(coords[1])
 		var connections_at_cell = cell_tree_connections[cell_key_str]
 		var connection_count = connections_at_cell[0] + connections_at_cell[1] + connections_at_cell[2] + connections_at_cell[3]
+		
 		if connection_count >= 4: 
-			var original_conns = connections_at_cell.duplicate(true)
-			var degraded_conns = degrade_to_three_connections(original_conns) # Pass original, returns modified
-			cell_tree_connections[cell_key_str] = degraded_conns 
-			for dir_idx in range(4): 
-				if original_conns[dir_idx] == 1 and degraded_conns[dir_idx] == 0:
-					var neighbor_x = current_x + simple_dirs_map_degradation[dir_idx][0]
-					var neighbor_y = current_y + simple_dirs_map_degradation[dir_idx][1]
-					var neighbor_key = "%s,%s" % [neighbor_x, neighbor_y]
-					if cell_tree_connections.has(neighbor_key): 
-						var opposite_dir_for_neighbor = (dir_idx + 2) % 4
-						if cell_tree_connections[neighbor_key][opposite_dir_for_neighbor] == 1:
-							cell_tree_connections[neighbor_key][opposite_dir_for_neighbor] = 0
-					break 
-	# --- End of 2. Post-process for degradation ---
+			var original_conns_at_cell = cell_tree_connections[cell_key_str].duplicate(true)
+			var connection_indices_to_try_removing = []
+			for i in range(4):
+				if original_conns_at_cell[i] == 1:
+					connection_indices_to_try_removing.append(i)
 
-	# --- 2.5: Connectivity Validation and Pruning ---
-	# Find all cells truly reachable from the source using the (potentially modified) cell_tree_connections
-	var truly_reachable_active_keys = find_reachable_cell_keys(source_x, source_y, cell_tree_connections, grid_width, grid_height)
+			# Check if we have enough connections to actually perform the smart removal logic
+			# A true 4-way junction should have 4 connections.
+			if connection_indices_to_try_removing.size() == 4: # Strict check for 4 connections
+				var best_degraded_conns_for_this_cell = null # Renamed for clarity
+				var max_reachable_after_degrade = -1
+
+				# Iterate through each of the 4 connections as a candidate for removal
+				for dir_to_remove in connection_indices_to_try_removing:
+					var temp_connections_map = deep_copy_dictionary_of_arrays(cell_tree_connections)
+					temp_connections_map[cell_key_str][dir_to_remove] = 0
+					
+					var loc_neighbor_x_raw = current_x + simple_dirs_map_degradation[dir_to_remove][0]
+					var loc_neighbor_y_raw = current_y + simple_dirs_map_degradation[dir_to_remove][1]
+					var loc_neighbor_x: int; var loc_neighbor_y: int
+					if p_is_toroidal:
+						loc_neighbor_x = get_toroidal_neighbor_coord(loc_neighbor_x_raw, grid_width)
+						loc_neighbor_y = get_toroidal_neighbor_coord(loc_neighbor_y_raw, grid_height) # Corrected here
+					else:
+						loc_neighbor_x = loc_neighbor_x_raw
+						loc_neighbor_y = loc_neighbor_y_raw
+					
+					var loc_neighbor_key = "%s,%s" % [loc_neighbor_x, loc_neighbor_y]
+					if temp_connections_map.has(loc_neighbor_key):
+						var opposite_dir = (dir_to_remove + 2) % 4
+						temp_connections_map[loc_neighbor_key][opposite_dir] = 0
+					
+					var reachable_keys_after_this_removal = find_reachable_cell_keys(source_x, source_y, temp_connections_map, grid_width, grid_height, p_is_toroidal)
+					var num_reachable = reachable_keys_after_this_removal.size()
+
+					if num_reachable > max_reachable_after_degrade:
+						max_reachable_after_degrade = num_reachable
+						best_degraded_conns_for_this_cell = temp_connections_map[cell_key_str].duplicate(true)
+					elif num_reachable == max_reachable_after_degrade:
+						if randf() < 0.5: 
+							best_degraded_conns_for_this_cell = temp_connections_map[cell_key_str].duplicate(true)
+				
+				# Apply the best degradation found (if any)
+				if best_degraded_conns_for_this_cell != null:
+					# ... (logic to apply best_degraded_conns_for_this_cell and update the neighbor) ...
+					# (This part was in your previous snippet and should be mostly correct,
+					# just ensure it uses best_degraded_conns_for_this_cell and original_conns_at_cell
+					# to find the *actually* removed connection and update the correct neighbor in the
+					# main cell_tree_connections map)
+					var effectively_removed_dir = -1
+					for i_check in range(4):
+						if original_conns_at_cell[i_check] == 1 and best_degraded_conns_for_this_cell[i_check] == 0:
+							effectively_removed_dir = i_check
+							break
+					
+					if effectively_removed_dir != -1:
+						cell_tree_connections[cell_key_str] = best_degraded_conns_for_this_cell # Apply to main map
+						# Update neighbor in main map
+						var fnx_raw = current_x + simple_dirs_map_degradation[effectively_removed_dir][0]
+						var fny_raw = current_y + simple_dirs_map_degradation[effectively_removed_dir][1]
+						# ... (calculate fnx, fny, fn_key for toroidal/non-toroidal) ...
+						# ... (cell_tree_connections[fn_key][opposite_dir] = 0) ...
+						var fnx_final:int; var fny_final:int # explicit new names
+						if p_is_toroidal:
+							fnx_final = get_toroidal_neighbor_coord(fnx_raw, grid_width)
+							fny_final = get_toroidal_neighbor_coord(fny_raw, grid_height)
+						else:
+							fnx_final = fnx_raw; fny_final = fny_raw
+						var fn_key_final = "%s,%s" % [fnx_final, fny_final]
+						if cell_tree_connections.has(fn_key_final):
+							var f_opposite_final = (effectively_removed_dir + 2) % 4
+							if cell_tree_connections[fn_key_final][f_opposite_final] == 1:
+								cell_tree_connections[fn_key_final][f_opposite_final] = 0
+					else:
+						printerr("Degradation Error: Could not determine which connection was removed for smart degradation of %s." % cell_key_str)
+						# Fallback to simple if logic failed to find removed_dir
+						# (This block is essentially the same as the 'else' below now)
+						var degraded_conns_simple = degrade_to_three_connections(original_conns_at_cell.duplicate(true))
+						cell_tree_connections[cell_key_str] = degraded_conns_simple
+						# ... (and update neighbor for the simple degradation) ...
+						for i_simple in range(4):
+							if original_conns_at_cell[i_simple] == 1 and degraded_conns_simple[i_simple] == 0:
+								# ... (update neighbor for this i_simple as above) ...
+								break
+
+
+				else: # Should not happen if connection_indices_to_try_removing had items
+					printerr("Degradation Error: Smart degradation found no best option for %s. Applying simple." % cell_key_str)
+					# Fallback to simple (same as below)
+					var degraded_conns_simple = degrade_to_three_connections(original_conns_at_cell.duplicate(true))
+					cell_tree_connections[cell_key_str] = degraded_conns_simple
+					# ... (and update neighbor for the simple degradation, find the removed dir and update) ...
+					for i_simple in range(4):
+						if original_conns_at_cell[i_simple] == 1 and degraded_conns_simple[i_simple] == 0:
+							var s_fnx_raw = current_x + simple_dirs_map_degradation[i_simple][0]
+							var s_fny_raw = current_y + simple_dirs_map_degradation[i_simple][1]
+							var s_fnx_final:int; var s_fny_final:int
+							if p_is_toroidal: # toroidal check
+								s_fnx_final = get_toroidal_neighbor_coord(s_fnx_raw, grid_width)
+								s_fny_final = get_toroidal_neighbor_coord(s_fny_raw, grid_height)
+							else:
+								s_fnx_final = s_fnx_raw; s_fny_final = s_fny_raw
+							var s_fn_key_final = "%s,%s" % [s_fnx_final, s_fny_final]
+							if cell_tree_connections.has(s_fn_key_final):
+								var s_f_opposite_final = (i_simple + 2) % 4
+								if cell_tree_connections[s_fn_key_final][s_f_opposite_final] == 1:
+									cell_tree_connections[s_fn_key_final][s_f_opposite_final] = 0
+							break # Done for simple fallback
+
+			else: # Not a 4-connection piece that we can "smartly" degrade (e.g. 5+ ways, or <4 but somehow count was >=4)
+				printerr("Degradation: Cell %s has %s connections, but found %s removable indices. Applying simple degradation." % [cell_key_str, connection_count, connection_indices_to_try_removing.size()])
+				var degraded_conns_simple = degrade_to_three_connections(original_conns_at_cell.duplicate(true)) # operate on a copy
+				cell_tree_connections[cell_key_str] = degraded_conns_simple # apply to main map
+				# Update the corresponding neighbor
+				for i_simple_fallback in range(4):
+					if original_conns_at_cell[i_simple_fallback] == 1 and degraded_conns_simple[i_simple_fallback] == 0:
+						# This dir_idx_final was the one effectively removed
+						var neighbor_x_raw_f = current_x + simple_dirs_map_degradation[i_simple_fallback][0]
+						var neighbor_y_raw_f = current_y + simple_dirs_map_degradation[i_simple_fallback][1]
+						var neighbor_x_f: int; var neighbor_y_f: int
+						if p_is_toroidal:
+							neighbor_x_f = get_toroidal_neighbor_coord(neighbor_x_raw_f, grid_width)
+							neighbor_y_f = get_toroidal_neighbor_coord(neighbor_y_raw_f, grid_height)
+						else:
+							neighbor_x_f = neighbor_x_raw_f; neighbor_y_f = neighbor_y_raw_f
+						
+						var neighbor_key_f = "%s,%s" % [neighbor_x_f, neighbor_y_f]
+						if cell_tree_connections.has(neighbor_key_f):
+							var opposite_dir_f = (i_simple_fallback + 2) % 4
+							if cell_tree_connections[neighbor_key_f][opposite_dir_f] == 1:
+								cell_tree_connections[neighbor_key_f][opposite_dir_f] = 0
+						break # Found the removed connection
 	
-	# Create a new set of connections and active cells, keeping only the reachable ones
+		
+		#if connection_count >= 4: 
+			#var original_conns = connections_at_cell.duplicate(true)
+			#var degraded_conns = degrade_to_three_connections(original_conns)
+			#cell_tree_connections[cell_key_str] = degraded_conns 
+				#
+			#for dir_idx in range(4): 
+				#if original_conns[dir_idx] == 1 and degraded_conns[dir_idx] == 0: # Connection was removed
+					#var neighbor_x_raw = current_x + simple_dirs_map_degradation[dir_idx][0]
+					#var neighbor_y_raw = current_y + simple_dirs_map_degradation[dir_idx][1]
+					#var neighbor_x: int; var neighbor_y: int
+#
+					#if p_is_toroidal:
+						#neighbor_x = get_toroidal_neighbor_coord(neighbor_x_raw, grid_width)
+						#neighbor_y = get_toroidal_neighbor_coord(neighbor_y_raw, grid_height)
+					#else:
+						#neighbor_x = neighbor_x_raw; neighbor_y = neighbor_y_raw
+						#
+					#var neighbor_key = "%s,%s" % [neighbor_x, neighbor_y] # Key from (potentially wrapped) coords
+					#if cell_tree_connections.has(neighbor_key): 
+						#var opposite_dir_for_neighbor = (dir_idx + 2) % 4
+						#if cell_tree_connections[neighbor_key][opposite_dir_for_neighbor] == 1:
+							#cell_tree_connections[neighbor_key][opposite_dir_for_neighbor] = 0
+					## No need to break, degradation might remove multiple. But degrade_to_three only removes one. So break is fine.
+					#break 
+		# --- End of 2. Post-process for degradation ---
+		# --- 2.5: Connectivity Validation and Pruning ---
+		# MODIFIED: Pass p_is_toroidal to find_reachable_cell_keys
+	var truly_reachable_active_keys = find_reachable_cell_keys(source_x, source_y, cell_tree_connections, 
+															   grid_width, grid_height, p_is_toroidal)
+	
 	var final_active_cell_keys = {}
 	var final_cell_tree_connections = {}
-
-	for cell_key_str in cell_tree_connections.keys(): # Iterate original potentially fragmented connections
+	for cell_key_str in cell_tree_connections.keys():
 		if truly_reachable_active_keys.has(cell_key_str):
-			# This cell is part of the main connected component including the source
 			final_cell_tree_connections[cell_key_str] = cell_tree_connections[cell_key_str]
-			if initial_active_cell_keys.has(cell_key_str): # And it was intended to be an active tile
+			if initial_active_cell_keys.has(cell_key_str):
 				final_active_cell_keys[cell_key_str] = true
-		# else: The cell_key_str was in cell_tree_connections but is not reachable from source.
-		# It will be omitted from final_cell_tree_connections and final_active_cell_keys,
-		# effectively making it an empty tile later.
-
-	# Replace the old maps with the validated ones
 	cell_tree_connections = final_cell_tree_connections
-	initial_active_cell_keys = final_active_cell_keys # Rename for clarity in step 3 if you like
+	initial_active_cell_keys = final_active_cell_keys
 	# --- End of 2.5 Connectivity Validation ---
 
-
 	# --- 3. Create Branch Instances ---
+	# This part should be fine as it uses the processed cell_tree_connections keys,
+	# which are already correct for toroidal/non-toroidal.
 	for x_idx in range(grid_width):
 		for y_idx in range(grid_height):
 			var branch_instance = branch_scene.instantiate()
 			branch_instance.grid_x = x_idx; branch_instance.grid_y = y_idx
 			var current_cell_key = "%s,%s" % [x_idx, y_idx]
 
-			# Check if this cell is an active, connected part of the puzzle
 			if initial_active_cell_keys.has(current_cell_key) and cell_tree_connections.has(current_cell_key):
 				var final_solved_conn = cell_tree_connections[current_cell_key]
 				var final_conn_count = final_solved_conn[0] + final_solved_conn[1] + final_solved_conn[2] + final_solved_conn[3]
 
-				if final_conn_count == 0: # Could happen if a tile became isolated and its connections zeroed
-					branch_instance.branch_type = BranchType.EMPTY
+				if final_conn_count == 0: branch_instance.branch_type = BranchType.EMPTY
 				elif final_conn_count == 1: branch_instance.branch_type = BranchType.TERMINAL
 				elif final_conn_count == 2:
 					if (final_solved_conn[0]==1 && final_solved_conn[2]==1) || (final_solved_conn[1]==1 && final_solved_conn[3]==1):
 						branch_instance.branch_type = BranchType.STRAIGHT
 					else: branch_instance.branch_type = BranchType.BEND
 				elif final_conn_count == 3: branch_instance.branch_type = BranchType.THREE
-				else: # Should not happen if final_conn_count >= 4 was degraded and validated
+				else: 
 					printerr("Error: Cell %s has unexpected connection count %s after validation." % [current_cell_key, final_conn_count])
-					branch_instance.branch_type = BranchType.EMPTY # Fallback
+					branch_instance.branch_type = BranchType.EMPTY
 
 				if branch_instance.branch_type != BranchType.EMPTY:
 					branch_instance.connections = normalize_connections(final_solved_conn, final_conn_count)
@@ -252,29 +467,24 @@ func generate_solvable_puzzle(grid_width: int, grid_height: int, branch_scene: P
 					branch_instance.rotation_index = random_rotations
 				else: branch_instance.connections = [0,0,0,0]
 
-				# Set initial gameplay state
-				if current_cell_key == source_key_str: # Check if current cell is the source
-					# Source must be part of the final active tree to be "alive"
+				if current_cell_key == source_key_str:
 					if initial_active_cell_keys.has(source_key_str) and cell_tree_connections.has(source_key_str):
 						branch_instance.state = "alive"
 						branch_instance.connected_to_source = true
-					else: # Source itself got pruned - puzzle is fundamentally broken
+					else: 
 						printerr("CRITICAL: Source tile %s was pruned! Puzzle will be unplayable." % source_key_str)
-						branch_instance.state = "dead" # Or make it empty
-						branch_instance.connected_to_source = false
+						branch_instance.state = "dead"; branch_instance.connected_to_source = false
 				else:
-					branch_instance.state = "dead"
-					branch_instance.connected_to_source = false
-			else: # Not an active cell (either never was, or pruned in step 2.5)
+					branch_instance.state = "dead"; branch_instance.connected_to_source = false
+			else: 
 				branch_instance.branch_type = BranchType.EMPTY
 				branch_instance.connections = [0,0,0,0]
-				branch_instance.state = "dead" 
-				branch_instance.connected_to_source = false
-			
+				branch_instance.state = "dead"; branch_instance.connected_to_source = false
+				
 			branch_instance.update_texture()
 			final_branches_grid[x_idx][y_idx] = branch_instance
 	# --- End of 3. Create Branch Instances ---
-	
+
 	return {
 		"branches": final_branches_grid,
 		"source_x": source_x,
