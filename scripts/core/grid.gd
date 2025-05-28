@@ -54,17 +54,7 @@ func _ready():
 		# Fallback if GlobalSettings is not found (e.g., running grid.tscn directly for testing)
 		current_difficulty_str = "torrero" # Your previous default value
 		printerr("Grid: GlobalSettings Autoload not found! Using default difficulty: " + current_difficulty_str)
-
-	# 2. Load the level based on the (now set) current_difficulty_str
-	# This function will use self.current_difficulty_str to set up everything
 	load_level_for_current_difficulty()
-
-	# 3. Tell AudioManager to play music for this difficulty
-	#if AudioManager:
-		#print("Grid: Telling AudioManager to play music for difficulty: " + current_difficulty_str)
-		#AudioManager.load_and_play_music_by_difficulty(current_difficulty_str)
-	#else:
-		#printerr("Grid: AudioManager not found! Cannot play difficulty-specific music.")
 
 func load_level_for_current_difficulty():
 	print("--- load_level_for_current_difficulty START for: %s ---" % self.current_difficulty_str)
@@ -133,7 +123,7 @@ func load_level_for_current_difficulty():
 		print("Skipping center_grid as no branches were added to the scene tree.")
 
 	if AudioManager: # Ensure AudioManager is capitalized correctly if that's its autoload name
-		AudioManager.load_and_play_music_by_difficulty(self.current_difficulty_str)
+		AudioManager.play_difficulty_music(self.current_difficulty_str)
 		print("AudioManager instructed to play music for %s" % self.current_difficulty_str)
 	else:
 		printerr("AudioManager not found when trying to play music in load_level.")
@@ -165,7 +155,7 @@ func _input(event: InputEvent):
 	if difficulty_changed_by_hotkey:
 		load_level_for_current_difficulty() # Reload the level with the new difficulty
 		if AudioManager: # Also update the music
-			AudioManager.load_and_play_music_by_difficulty(current_difficulty_str)
+			AudioManager.play_difficulty_music(current_difficulty_str)
 		return # If difficulty changed, no need to process other inputs in this frame for branches
 
 func center_grid():
@@ -544,8 +534,8 @@ func start_leaf_spawn_sequence():
 
 	eligible_leaf_branches.shuffle()
 
-	var leaf_delay_accumulator: float = 0.0
-	var base_leaf_delay: float = 0.066 # Approx 4 frames at 60fps (1/60 * 4)
+	var leaf_delay_accumulator: float = 0.5
+	var base_leaf_delay: float = 0.15 # Approx 4 frames at 60fps (1/60 * 4)
 									 # Or 0.05 for 3 frames at 60fps
 
 	for i in range(eligible_leaf_branches.size()):

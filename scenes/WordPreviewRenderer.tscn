@@ -1,0 +1,11 @@
+[gd_scene load_steps=3 format=3 uid="uid://dkod4g8u8j56n"]
+
+[ext_resource type="Script" path="res://scripts/core/WordPreviewRenderer.gd" id="1_20w7o"]
+[ext_resource type="PackedScene" uid="uid://c0ypcplpcfojt" path="res://scenes/Branch_Preview.tscn" id="2_d5mpp"]
+
+[node name="WordPreviewRenderer" type="SubViewport"]
+transparent_bg = true
+script = ExtResource("1_20w7o")
+branch_preview_scene = ExtResource("2_d5mpp")
+
+[node name="TileContainer" type="Node2D" parent="."]

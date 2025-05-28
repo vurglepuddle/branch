@@ -18,8 +18,9 @@ config/icon="res://icons/app icon.png"
 
 [autoload]
 
-AudioManager="*res://scripts/core/audio.gd"
 GlobalSettings="*res://scripts/core/GlobalSettings.gd"
+AudioManager="*res://scenes/AudioManager.tscn"
+DifficultyLayouts="*res://scripts/core/difficulty_layouts.gd"
 
 [display]
 

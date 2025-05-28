@@ -1,0 +1,135 @@
+[gd_scene load_steps=6 format=3 uid="uid://dlyj83s3srmk4"]
+
+[ext_resource type="Script" path="res://scenes/main_menu.gd" id="1_xlwsn"]
+[ext_resource type="PackedScene" uid="uid://dkod4g8u8j56n" path="res://scenes/WordPreviewRenderer.tscn" id="2_skuly"]
+[ext_resource type="PackedScene" uid="uid://c0ypcplpcfojt" path="res://scenes/Branch_Preview.tscn" id="3_603mc"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dgx0k"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_omlvj"]
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_xlwsn")
+
+[node name="WordPreviewRenderer" parent="." instance=ExtResource("2_skuly")]
+branch_preview_scene = ExtResource("3_603mc")
+
+[node name="DifficultyPreviewDisplay" type="TextureRect" parent="."]
+layout_mode = 0
+offset_left = 123.0
+offset_top = 235.0
+offset_right = 438.0
+offset_bottom = 913.0
+
+[node name="BackgroundRect" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.0475577, 0.0475576, 0.0475576, 1)
+
+[node name="GameLogoLabel" type="Label" parent="."]
+layout_mode = 0
+offset_left = 190.0
+offset_top = 99.0
+offset_right = 331.0
+offset_bottom = 122.0
+text = "BEAUTIFL GAME LOGO"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MenuPanel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -219.5
+offset_top = -398.0
+offset_right = 230.5
+offset_bottom = 402.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_dgx0k")
+
+[node name="MenuItemsContainer" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -17.5
+offset_top = -11.5
+offset_right = 17.5
+offset_bottom = 11.5
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+
+[node name="StartButton" type="Button" parent="MenuItemsContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Start Game"
+
+[node name="HSeparator2" type="HSeparator" parent="MenuItemsContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="DifficultyLabel" type="Label" parent="MenuItemsContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Easy"
+horizontal_alignment = 1
+
+[node name="DifficultyButton" type="Button" parent="MenuItemsContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Change Difficulty"
+
+[node name="HSeparator" type="HSeparator" parent="MenuItemsContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="SFX_HBox" type="HBoxContainer" parent="MenuItemsContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+alignment = 1
+
+[node name="SFXButton" type="Button" parent="MenuItemsContainer/SFX_HBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "SFX"
+
+[node name="SFXIndicatorLabel" type="Label" parent="MenuItemsContainer/SFX_HBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "ON"
+vertical_alignment = 1
+
+[node name="Music_HBox" type="HBoxContainer" parent="MenuItemsContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+alignment = 1
+
+[node name="MusicButton" type="Button" parent="MenuItemsContainer/Music_HBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Music"
+
+[node name="MusicIndicatorLabel" type="Label" parent="MenuItemsContainer/Music_HBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Classic"
+label_settings = SubResource("LabelSettings_omlvj")
+vertical_alignment = 1

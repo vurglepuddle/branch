@@ -1,6 +1,11 @@
 extends Node # audio.gd
 
+signal music_display_changed(display_name: String)
+
+@export var modern_beep_sound: AudioStream = preload("res://audio/modern/SFX_modern.wav")
 @export var beep_sound: AudioStream = preload("res://audio//other/beep_sound.wav")
+@export var switch_to_off_sfx: AudioStream
+
 @export var difficulty_music: Dictionary = {
 	"baby": "res://audio/other/opening.mp3",
 	"intern": "res://audio/other/opening.mp3",
@@ -9,6 +14,20 @@ extends Node # audio.gd
 	"expert": "res://audio/other/opening.mp3",
 	"torrero": "res://audio/other/BWV784 Courante.mp3"
 }
+
+@export var difficulty_music_modern: Dictionary = {
+	"baby": "res://audio/modern/modernA.mp3",
+	"intern": "res://audio/modern/modernB.mp3",
+	"profi": "res://audio/modern/modernC.mp3",
+	"master": "res://audio/modern/modernA.mp3",
+	"expert": "res://audio/modern/modernB.mp3",
+	"torrero": "res://audio/modern/modernC.mp3"
+}
+
+# --- New Exports ---
+@export var classic_menu_theme: AudioStream
+@export var modern_menu_theme: AudioStream
+#@export var style_switch_sfx_stream: AudioStream # SFX for when music style changes
 
 # --- Audio Players ---
 var sfx_player: AudioStreamPlayer
@@ -20,36 +39,30 @@ var music_globally_muted: bool = false # For master music mute (e.g., M key)
 var current_music_path: String = ""
 var music_change_pending: bool = false # Flag to handle rapid changes
 
-var menu_music_tracks: Array[Dictionary] = [
-	{"name": "Original", "path": "res://audio/other/opening.mp3"},
-	{"name": "Courante", "path": "res://audio/other/BWV784 Courante.mp3"},
-	{"name": "Off", "path": null} # An option to turn music off by cycling
-]
-
-var current_menu_music_idx: int = 0
-#var is_muted: bool = false
-#var all_audio_players: Array = []
-#var active_tweens: Dictionary = {}
-
+enum MusicStyle { CLASSIC, MODERN }
+var current_music_style: MusicStyle = MusicStyle.CLASSIC
+var is_menu_music_off: bool = false # To handle the "Off" state for menu music explicitly
 
 # Constants for tweening
 const MUSIC_TARGET_VOLUME_DB: float = -10.0
 const MUSIC_MUTED_VOLUME_DB: float = -80.0 # Effectively silent
 const MUSIC_FADE_DURATION: float = 1.0 # Default fade duration
 const DEFAULT_SFX_VOLUME_DB: float = 0.0
+const INITIAL_MUSIC_FADE_IN_DURATION: float = 1.5
 
 func _ready():
+	#print("--- AudioManager: _ready() START ---")
 	setup_audio_players()
+	#print("--- AudioManager: After setup_audio_players ---")
 	initialize_audio_settings()
-	print("AudioManager ready.")
+	#print("--- AudioManager: After initialize_audio_settings ---")
+	#print("--- AudioManager: _ready() COMPLETED --- (Engine will emit 'ready' signal now)")
 
 
 func setup_audio_players():
 	if not is_instance_valid(sfx_player):
 		sfx_player = AudioStreamPlayer.new()
 		sfx_player.name = "SFXPlayer"
-		if beep_sound: # Default beep sound
-			sfx_player.stream = beep_sound
 		add_child(sfx_player)
 	
 	if not is_instance_valid(bg_player):
@@ -59,252 +72,287 @@ func setup_audio_players():
 		bg_player.connect("finished", Callable(self, "_on_music_track_finished"))
 
 func initialize_audio_settings():
-	# Initialize SFX player volume based on sfx_enabled state
+	print("AudioManager initialize_audio_settings: START")
 	sfx_player.volume_db = DEFAULT_SFX_VOLUME_DB if sfx_enabled else MUSIC_MUTED_VOLUME_DB
+	# print("AudioManager initialize_audio_settings: SFX volume set.")
 
-	# Load and play initial menu music track if not globally muted
-	if not menu_music_tracks.is_empty():
-		var initial_track_info = menu_music_tracks[current_menu_music_idx]
-		_load_and_set_music_track(initial_track_info.path, false) # false for no fade on initial load
-
+	# Call _update_menu_music_on_state_change with fade_in = true for the initial load
+	_update_menu_music_on_state_change(true, INITIAL_MUSIC_FADE_IN_DURATION) # Use new duration parameter
+	# print("AudioManager initialize_audio_settings: After _update_menu_music_on_state_change.")
+	
+	var initial_display_name: String
+	if is_menu_music_off:
+		initial_display_name = "Off"
+	elif current_music_style == MusicStyle.CLASSIC:
+		initial_display_name = "Classic"
+	else:
+		initial_display_name = "Modern"
+	
+	# print("AudioManager initialize_audio_settings: Determined initial_display_name: ", initial_display_name)
+	emit_signal("music_display_changed", initial_display_name)
+	# print("AudioManager initialize_audio_settings: Signal 'music_display_changed' emitted.")
+	# print("AudioManager initialize_audio_settings: END")
 
 func _on_music_track_finished():
-	# This is called when a non-looping track ends.
-	# For looped tracks, this won't be hit unless loop is manually turned off.
-	print("AudioManager: Music track finished signal received (may indicate non-looping track ended).")
-	# If you want continuous play even for non-looped tracks, you could re-trigger play here
-	# or cycle to the next track, depending on desired behavior.
-	# For now, if it was looped, it continues. If not, it stops.
-
+	# Handle looping for music if not natively supported by stream's import settings
+	if bg_player.has_meta("loop") and bg_player.get_meta("loop") == true and \
+	   not music_globally_muted and not (is_menu_music_off and bg_player.stream in [classic_menu_theme, modern_menu_theme]): # Check relevant states
+		if is_instance_valid(bg_player.stream):
+			bg_player.play()
+		else:
+			print("AudioManager: Tried to loop, but stream is invalid.")
+	else:
+		print("AudioManager: Music track finished (not looping or conditions not met).")
 # --- SFX Control ---
 
 func toggle_sfx_enabled():
 	sfx_enabled = !sfx_enabled
 	sfx_player.volume_db = DEFAULT_SFX_VOLUME_DB if sfx_enabled else MUSIC_MUTED_VOLUME_DB
 	print("AudioManager: SFX " + ("ENABLED" if sfx_enabled else "DISABLED"))
-	# Optionally play a sound to indicate change, if SFX are now on
 	if sfx_enabled:
-		play_sfx("beep_sound") # Assuming you have a beep for UI feedback
+		play_named_sfx("beep_sound")
 
-func play_sfx(sfx_name: String = "beep_sound", volume_db: float = DEFAULT_SFX_VOLUME_DB):
+func play_named_sfx(sfx_key: String, volume_db: float = DEFAULT_SFX_VOLUME_DB):
 	if not sfx_enabled or not is_instance_valid(sfx_player):
 		return
 
-	# This is a placeholder for a more robust SFX management system
-	# For now, it just plays the default beep_sound or a named one if you extend this
-	if sfx_name == "beep_sound" and beep_sound:
-		sfx_player.stream = beep_sound
-		sfx_player.volume_db = volume_db if sfx_enabled else MUSIC_MUTED_VOLUME_DB
+	var stream_to_play: AudioStream
+	match sfx_key:
+		"beep_sound": 
+			# This is for general UI beeps (difficulty, start, sfx toggle etc.)
+			if is_menu_music_off: 
+				# If music is "Off" via the cycle, use the neutral 'switch_to_off_sfx' for all general beeps
+				stream_to_play = switch_to_off_sfx 
+			elif current_music_style == MusicStyle.CLASSIC:
+				stream_to_play = beep_sound # Classic beep
+			else: # current_music_style == MusicStyle.MODERN (and not is_menu_music_off)
+				stream_to_play = modern_beep_sound # Modern beep
+		
+		"switch_to_off_sfx": 
+			stream_to_play = switch_to_off_sfx
+
+		
+		_: # Fallback for unknown keys
+			printerr("AudioManager: Unknown SFX key: ", sfx_key)
+			# Fallback logic: if key is unknown, what should it play?
+			# Option 1: Play the current style-aware beep (classic/modern/neutral if off)
+			if is_menu_music_off:
+				stream_to_play = switch_to_off_sfx
+			elif current_music_style == MusicStyle.CLASSIC:
+				stream_to_play = beep_sound
+			else: # MODERN
+				stream_to_play = modern_beep_sound
+			if not stream_to_play:
+				printerr("AudioManager: No fallback beep sound available for unknown key.")
+				return
+	   
+	if stream_to_play:
+		sfx_player.stream = stream_to_play
+		sfx_player.volume_db = volume_db 
 		sfx_player.play()
-	# else if sfx_name == "other_sound":
-	#    sfx_player.stream = preload("res://path_to_other_sound.wav")
-	#    sfx_player.play()
 	else:
-		# Fallback to default beep if specific sound not found or implemented
-		if beep_sound:
-			sfx_player.stream = beep_sound
-			sfx_player.volume_db = volume_db if sfx_enabled else MUSIC_MUTED_VOLUME_DB
-			sfx_player.play()
+		# Refined error message to be more specific about which stream is null for the "beep_sound" key
+		var problem_stream_name = ""
+		if sfx_key == "beep_sound":
+			if is_menu_music_off:
+				problem_stream_name = "'switch_to_off_sfx' (for when music is Off)"
+			elif current_music_style == MusicStyle.CLASSIC:
+				problem_stream_name = "classic 'beep_sound'"
+			else: # MODERN
+				problem_stream_name = "'modern_beep_sound'"
+		elif sfx_key == "switch_to_off_sfx":
+			problem_stream_name = "'switch_to_off_sfx'"
+		else: # Unknown key
+			problem_stream_name = "a valid stream for key '%s' (or its fallback)" % sfx_key
 
+		printerr("AudioManager: SFX stream for %s is null. Please assign it in the Inspector." % problem_stream_name)
 
+# Kept for compatibility if you used play_sfx() elsewhere for default beep
+func play_sfx(sfx_name: String = "beep_sound", volume_db: float = DEFAULT_SFX_VOLUME_DB):
+	play_named_sfx(sfx_name, volume_db)
 # --- Music Control ---
 
-# res://audio.gd
+func toggle_music_style_and_state():
+	var display_name: String
+	var sfx_key_for_this_action: String = "beep_sound"
 
-# ... (other properties) ...
-# var music_globally_muted: bool = false # Already exists
+	if not is_menu_music_off:
+		if current_music_style == MusicStyle.CLASSIC:
+			current_music_style = MusicStyle.MODERN
+			display_name = "Modern"
+		elif current_music_style == MusicStyle.MODERN:
+			is_menu_music_off = true
+			display_name = "Off"
+			sfx_key_for_this_action = "switch_to_off_sfx"
+	else: 
+		is_menu_music_off = false
+		current_music_style = MusicStyle.CLASSIC 
+		display_name = "Classic"
 
-func cycle_menu_music_track():
-	if menu_music_tracks.is_empty():
+	emit_signal("music_display_changed", display_name)
+	play_named_sfx(sfx_key_for_this_action) 
+	_update_menu_music_on_state_change() # Uses default fade duration for changes
+
+func _update_menu_music_on_state_change(fade_in: bool = true, duration: float = MUSIC_FADE_DURATION):
+	# print("AudioManager _update_menu_music_on_state_change: START. Fade: ", fade_in, " Duration: ", duration)
+	if music_globally_muted:
+		# print("AudioManager _update_menu_music_on_state_change: Music globally muted, loading null.")
+		_load_and_set_music_track_from_stream(null, false, false, duration) # Pass duration
+		current_music_path = ""
+		# print("AudioManager _update_menu_music_on_state_change: END (globally muted)")
 		return
-	current_menu_music_idx = (current_menu_music_idx + 1) % menu_music_tracks.size()
-	var new_track_info = menu_music_tracks[current_menu_music_idx]
 
-	if new_track_info.path == null: # This is the "Off" track
-		print("AudioManager: 'Off' track selected in menu. Engaging global music mute.")
-		music_globally_muted = true
-		# We still call _load_and_set_music_track with null to ensure current track fades out.
-		_load_and_set_music_track(new_track_info.path, true) 
-	else:
-		# If a real track is selected, and we are only globally muted because "Off" was selected,
-		# we can consider unmuting. However, this might conflict with a manual global mute (e.g. M key).
-		# For simplicity, let's assume cycling to a real track means the user wants music IF global mute wasn't set by other means.
-		# A more robust solution might involve separate flags or states.
-		if music_globally_muted and get_current_menu_music_track_name() != "Off": # Check if it was previously "Off"
-			# This logic can get tricky. For now, let's just say selecting a track un-mutes only if
-			# the MUTE was specifically from choosing "Off".
-			# The toggle_global_music_mute should be the primary way to unmute if M-key was pressed.
-			# To keep it simple: if user selects a new track, we assume they want music unless M-key mute is active.
-			# For now, let's just allow _load_and_set_music_track to decide based on the current music_globally_muted state.
-			# If music_globally_muted was set by M-key, it will remain true.
-			# If it was set by "Off", and now a new track is selected, we might want to set it to false.
-			# Let's make `toggle_global_music_mute` the main control for this flag.
-			# Selecting "Off" just means "play no track now".
-			pass # Let _load_and_set_music_track handle based on existing music_globally_muted state.
-			# The current logic in _finalize_music_change already checks `music_globally_muted`.
-			# So if "Off" set it to true, new music won't play unless `toggle_global_music_mute` is called.
-			# This feels more consistent. So the change above (`music_globally_muted = true`) is the key for "Off".
-		_load_and_set_music_track(new_track_info.path, true)
+	var new_track_stream: AudioStream = null
+	if not is_menu_music_off:
+		if current_music_style == MusicStyle.CLASSIC:
+			# print("AudioManager _update_menu_music_on_state_change: Style is CLASSIC.")
+			new_track_stream = classic_menu_theme
+			# if not is_instance_valid(new_track_stream):
+				# printerr("AudioManager _update_menu_music_on_state_change: classic_menu_theme IS NULL!")
+		else: # MODERN
+			# print("AudioManager _update_menu_music_on_state_change: Style is MODERN.")
+			new_track_stream = modern_menu_theme
+			# if not is_instance_valid(new_track_stream):
+				# printerr("AudioManager _update_menu_music_on_state_change: modern_menu_theme IS NULL!")
+	# else:
+		# print("AudioManager _update_menu_music_on_state_change: Menu music is OFF.")
 	
-	print("AudioManager: Cycled to menu music track: " + new_track_info.name)
-	# MainMenu will update its display based on get_current_menu_music_track_name()
+	# print("AudioManager _update_menu_music_on_state_change: Calling _load_and_set_music_track_from_stream.")
+	_load_and_set_music_track_from_stream(new_track_stream, fade_in, true, duration) # true for loop, pass duration
 
-func get_current_menu_music_track_name() -> String:
-	if not menu_music_tracks.is_empty():
-		return menu_music_tracks[current_menu_music_idx].name
-	return "N/A"
 
-func _load_and_set_music_track(new_path_variant: Variant, fade: bool):
-	var new_path: String
-	if new_path_variant is String:
-		new_path = new_path_variant
-	elif new_path_variant == null:
-		new_path = "" # Convert null to empty string, signifying no track
-	else:
-		printerr("AudioManager: _load_and_set_music_track received unexpected type for path: ", typeof(new_path_variant), ". Defaulting to no track.")
-		new_path = "" # Default to no track for unexpected types
-
-	# --- The rest of the function uses 'new_path' which is now guaranteed to be a String ---
-
-	if music_change_pending and new_path == current_music_path:
-		# If a change to this exact path is already pending, do nothing.
-		# This also covers the case where new_path is "" and current_music_path is also "".
-		print("AudioManager: Music change to '%s' already pending or track is the same and change in progress." % new_path)
+func play_difficulty_music(difficulty_key: String, loop: bool = true, fade: bool = true, duration: float = MUSIC_FADE_DURATION):
+	if is_menu_music_off or music_globally_muted:
+		# print("AudioManager: Difficulty music not playing because menu music is set to Off or globally muted.")
+		_load_and_set_music_track_from_path("", false, loop, duration) # Play nothing
 		return
+
+	var music_lib: Dictionary
+	if current_music_style == MusicStyle.CLASSIC:
+		music_lib = difficulty_music
+	else: # MODERN
+		music_lib = difficulty_music_modern
 	
-	# If the same music is already playing (and not "" which means "off"),
-	# and not globally muted, ensure it's at target volume (e.g. if a previous fade was interrupted)
-	if !new_path.is_empty() and new_path == current_music_path and bg_player.playing and not music_globally_muted:
-		if bg_player.volume_db < MUSIC_TARGET_VOLUME_DB:
-			_start_volume_tween(bg_player, MUSIC_TARGET_VOLUME_DB, MUSIC_FADE_DURATION)
-		# print("AudioManager: Music '%s' is already playing at correct state." % new_path)
-		return
-	# If new_path is "" and current track is already "" (or not playing), also effectively no change needed.
-	if new_path.is_empty() and current_music_path.is_empty() and not bg_player.playing:
-		# print("AudioManager: Music is already off or set to no track.")
+	if not music_lib.has(difficulty_key):
+		printerr("AudioManager: Difficulty key '%s' not found in selected music library." % difficulty_key)
+		_load_and_set_music_track_from_path("", fade, loop, duration) # Play nothing
 		return
 
-	music_change_pending = true
-	
-	var music_stream: AudioStream = null
-	if !new_path.is_empty(): # Only attempt to load if new_path is a non-empty string
-		music_stream = load(new_path)
-		if not music_stream:
-			printerr("AudioManager: Failed to load music from: '%s'" % new_path)
-			music_change_pending = false # Reset pending flag as this attempt failed
-			# Fade out current music (if any), then finalize with no new stream (empty path)
-			if fade and (bg_player.playing or bg_player.volume_db > MUSIC_MUTED_VOLUME_DB + 5) and bg_player.stream != null :
-				_start_volume_tween(bg_player, MUSIC_MUTED_VOLUME_DB, MUSIC_FADE_DURATION, 
-									Callable(self, "_finalize_music_change").bind(null, "")) # Target stream=null, path=""
-			else:
-				_finalize_music_change(null, "") # Target stream=null, path=""
-			return
-		
-		# Ensure looping for background music
-		if music_stream is AudioStreamOggVorbis or music_stream is AudioStreamMP3:
-			music_stream.loop = true
-	# If new_path is empty, music_stream remains null, which is correct for stopping music.
+	var music_path_to_load: String = music_lib[difficulty_key]
+	_load_and_set_music_track_from_path(music_path_to_load, fade, loop, duration)
 
-	# Fade out current music if it's playing and fade is requested,
-	# and if the new music is different or if current music needs to stop.
-	# The check `bg_player.stream != null` ensures we only fade if there's something to fade.
-	if fade and (bg_player.playing or bg_player.volume_db > MUSIC_MUTED_VOLUME_DB + 5) and bg_player.stream != null :
-		# print("AudioManager: Fading out current music to switch to '%s'..." % new_path)
-		_start_volume_tween(bg_player, MUSIC_MUTED_VOLUME_DB, MUSIC_FADE_DURATION, 
-							Callable(self, "_finalize_music_change").bind(music_stream, new_path))
-	else:
-		# No current music playing, or no fade requested, or same track being re-set.
-		# Directly finalize the change.
-		_finalize_music_change(music_stream, new_path)
+# --- Core Music Loading and Playing ---
 
-func load_and_play_music_by_difficulty(difficulty_key: String):
-	if not difficulty_music.has(difficulty_key):
-		printerr("AudioManager: No music found for difficulty key: %s" % difficulty_key)
-		_load_and_set_music_track(null, true) # Pass null; _load_and_set_music_track will handle it
+func _load_and_set_music_track_from_stream(track_stream: AudioStream, fade_in: bool = true, loop: bool = true, duration: float = MUSIC_FADE_DURATION):
+	# print("AudioManager _load_and_set_music_track_from_stream: START. Stream valid: ", is_instance_valid(track_stream), " Fade: ", fade_in, " Loop: ", loop, " Duration: ", duration)
+	if music_change_pending and fade_in:
+		# print("AudioManager: Music change already pending.")
 		return
-
-	var new_music_path = difficulty_music[difficulty_key] # This could be null if defined so in the dictionary
-	_load_and_set_music_track(new_music_path, true) # Pass the path (which might be null or a string)
-
-func _finalize_music_change(new_stream: AudioStream, new_path: String):
-	music_change_pending = false # Processing finished or about to
-	
-	if not is_instance_valid(bg_player): return
-
-	bg_player.stop() # Stop before changing stream or volume drastically
-
-	current_music_path = new_path # Update path before potential play
-	bg_player.stream = new_stream
-
-	if new_stream != null:
-		if not music_globally_muted:
-			bg_player.volume_db = MUSIC_MUTED_VOLUME_DB # Start silent for fade-in
-			bg_player.play()
-			_start_volume_tween(bg_player, MUSIC_TARGET_VOLUME_DB, MUSIC_FADE_DURATION)
-			print("AudioManager: Playing new music '%s' with fade-in." % new_path)
-		else:
-			# Music is globally muted. Stream is loaded, path updated, but remains silent.
-			bg_player.volume_db = MUSIC_MUTED_VOLUME_DB
-			print("AudioManager: New music '%s' loaded but currently globally muted." % new_path)
-	else:
-		# No new stream means stop music (or it was already faded out)
-		bg_player.volume_db = MUSIC_MUTED_VOLUME_DB # Ensure it's silent
-		print("AudioManager: Music stopped (no new stream provided or 'Off' selected).")
-
-
-# --- Global Music Mute (e.g., for an 'M' key shortcut) ---
-# Ensure toggle_global_music_mute correctly updates UI if needed and handles playing/stopping
-func toggle_global_music_mute():
-	music_globally_muted = !music_globally_muted
-	print("AudioManager: Global music mute toggled to %s" % music_globally_muted)
 
 	if not is_instance_valid(bg_player):
+		printerr("AudioManager: BackgroundMusicPlayer not valid for _load_and_set_music_track_from_stream.")
 		return
 
-	_kill_player_tween(bg_player) # Stop any ongoing fade
+	# If already playing, different track, and fade_in is true, then fade out current
+	if bg_player.playing and bg_player.stream != track_stream and fade_in:
+		music_change_pending = true
+		var tween = create_tween()
+		# Fade out current track over half the duration (or a fixed short duration)
+		tween.tween_property(bg_player, "volume_db", MUSIC_MUTED_VOLUME_DB, duration / 2.0) 
+		tween.tween_callback(Callable(self, "_play_new_music_stream").bind(track_stream, loop, true, duration)) # Pass true for fade_in and duration
+	else:
+		# Play new track (or replay same track if loop is false and it finished, or if no fade_in was requested)
+		# If it's the same track or no fade_in, the fade_in flag to _play_new_music_stream will be false.
+		_play_new_music_stream(track_stream, loop, fade_in and bg_player.stream != track_stream, duration)
 
-	if music_globally_muted:
-		# If "Off" track is selected in menu, its path is null.
-		# We want to mute regardless of current track.
-		if bg_player.playing: 
-			_start_volume_tween(bg_player, MUSIC_MUTED_VOLUME_DB, MUSIC_FADE_DURATION)
-		else: 
+
+# Plays music from a resource path (good for dynamic loading like difficulty music)
+func _load_and_set_music_track_from_path(track_path: String, fade_in: bool = true, loop: bool = true, duration: float = MUSIC_FADE_DURATION):
+
+	var new_stream: AudioStream = null
+	if not track_path.is_empty():
+		new_stream = load(track_path) as AudioStream
+		if not is_instance_valid(new_stream):
+			printerr("AudioManager: Failed to load music track from path: ", track_path)
+			_load_and_set_music_track_from_stream(null, false, loop, duration) # Play nothing
+			return
+	
+	_load_and_set_music_track_from_stream(new_stream, fade_in, loop, duration)
+
+
+
+
+func _play_new_music_stream(track_stream: AudioStream, loop: bool, should_fade_in_new_track: bool, fade_duration: float = MUSIC_FADE_DURATION):
+	music_change_pending = false
+	if not is_instance_valid(bg_player): return
+
+	# If it's the same stream, it's already playing, and no fade was requested (e.g. from finished signal for looping)
+	# or if global mute changed state.
+	if bg_player.stream == track_stream and bg_player.playing and not should_fade_in_new_track:
+		bg_player.stream_paused = music_globally_muted # Just ensure global mute state is applied
+		# Ensure volume is correct if unmuting
+		if not music_globally_muted and not (is_menu_music_off and bg_player.stream in [classic_menu_theme, modern_menu_theme]):
+			if bg_player.volume_db < MUSIC_TARGET_VOLUME_DB - 1.0: # If it was muted
+				bg_player.volume_db = MUSIC_TARGET_VOLUME_DB
+		return
+
+	bg_player.stop() # Stop current playback before changing stream or parameters
+
+	if is_instance_valid(track_stream):
+		bg_player.stream = track_stream
+		# Set initial volume based on whether we're fading or globally muted
+		if should_fade_in_new_track and not music_globally_muted:
+			bg_player.volume_db = MUSIC_MUTED_VOLUME_DB # Start silent for fade-in
+		elif music_globally_muted:
 			bg_player.volume_db = MUSIC_MUTED_VOLUME_DB
-		# If "Off" is selected in menu, update current_menu_music_idx to reflect this,
-		# so the UI shows "Off" if global mute is activated.
-		# This makes the M-key sync with the menu's "Off" state.
-		var off_idx = -1
-		for i in menu_music_tracks.size():
-			if menu_music_tracks[i].path == null:
-				off_idx = i
-				break
-		if off_idx != -1:
-			current_menu_music_idx = off_idx
-			# You'll need a way for main_menu to refresh its display if it's visible.
-			# e.g., emit a signal: emit_signal("music_settings_changed")
+		else: # Play immediately at target volume
+			bg_player.volume_db = MUSIC_TARGET_VOLUME_DB
+		
+		bg_player.play()
+		bg_player.stream_paused = music_globally_muted # Apply global mute immediately
+		
+		current_music_path = track_stream.resource_path if track_stream else ""
 
-	else: # Unmuting globally
-		# If unmuting, and current menu track is "Off", cycle to the first actual music track.
-		# Or, simply play current_music_path if it's not null.
-		if current_music_path != null and !current_music_path.is_empty() and bg_player.stream != null:
-			bg_player.play() 
-			_start_volume_tween(bg_player, MUSIC_TARGET_VOLUME_DB, MUSIC_FADE_DURATION)
-		elif current_music_path != null and !current_music_path.is_empty() and bg_player.stream == null:
-			# Stream was probably set to null because of "Off" or previous mute. Try to reload.
-			_load_and_set_music_track(current_music_path, true) # true to fade in
+		if should_fade_in_new_track and not music_globally_muted:
+			var tween = create_tween().set_trans(Tween.TRANS_SINE) # Smooth fade
+			tween.tween_property(bg_player, "volume_db", MUSIC_TARGET_VOLUME_DB, fade_duration)
+		# If not fading in and not globally muted, ensure volume is at target
+		elif not music_globally_muted and not should_fade_in_new_track:
+			bg_player.volume_db = MUSIC_TARGET_VOLUME_DB
+
+	else: # track_stream is null (e.g., music turned "Off")
+		current_music_path = ""
+		bg_player.stream = null 
+		bg_player.volume_db = MUSIC_MUTED_VOLUME_DB # Ensure it's silent
+
+	bg_player.set_meta("loop", loop) # For manual looping in _on_music_track_finished
+
+func _fade_music_out(duration: float = MUSIC_FADE_DURATION):
+	if is_instance_valid(bg_player) and bg_player.playing:
+		var tween = create_tween()
+		tween.tween_property(bg_player, "volume_db", MUSIC_MUTED_VOLUME_DB, duration)
+		tween.tween_callback(Callable(bg_player, "stop"))
+
+
+# --- Global Mute (Example - you might have this elsewhere) ---
+func toggle_global_music_mute():
+	music_globally_muted = !music_globally_muted
+	if is_instance_valid(bg_player):
+		if music_globally_muted:
+			#bg_player.volume_db = MUSIC_MUTED_VOLUME_DB # Or use stream_paused
+			bg_player.stream_paused = true
+			print("AudioManager: Music GLOBALLY MUTED")
 		else:
-			# No current_music_path (was "Off" and nothing else loaded).
-			# Optionally, play the default menu music.
-			if not menu_music_tracks.is_empty():
-				var first_track_idx = 0
-				if menu_music_tracks[first_track_idx].path == null and menu_music_tracks.size() > 1:
-					first_track_idx = 1 # Try second track if first is "Off"
-				
-				if menu_music_tracks[first_track_idx].path != null:
-					current_menu_music_idx = first_track_idx
-					_load_and_set_music_track(menu_music_tracks[current_menu_music_idx].path, true)
-				else: # Still no valid track, stay silent
-					bg_player.volume_db = MUSIC_MUTED_VOLUME_DB
+			#bg_player.volume_db = MUSIC_TARGET_VOLUME_DB # Or use stream_paused
+			bg_player.stream_paused = false
+			# If music was off due to style choice, global unmute shouldn't turn it on unless style changes
+			if not (is_menu_music_off and bg_player.stream in [classic_menu_theme, modern_menu_theme]):
+				if bg_player.playing and bg_player.stream != null: # ensure it was playing something
+					bg_player.volume_db = MUSIC_TARGET_VOLUME_DB
+			print("AudioManager: Music GLOBALLY UNMUTED")
+	# Potentially re-evaluate current music if it was "off" due to global mute
+	if not music_globally_muted:
+		_update_menu_music_on_state_change(false) # Refresh current menu music state without fade
 
 
 # --- Tweening Logic ---

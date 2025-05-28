@@ -20,6 +20,7 @@ script = ExtResource("1_7u11k")
 BranchScene = ExtResource("2_cmxuk")
 
 [node name="Sprite2D2" type="Sprite2D" parent="."]
+visible = false
 visibility_layer = 256
 z_index = -2
 z_as_relative = false
