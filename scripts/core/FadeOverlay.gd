@@ -6,18 +6,18 @@ signal fade_finished
 @onready var fade_rect: ColorRect = $FadeRect
 var _is_fading: bool = false
 
+func is_currently_fading() -> bool: # Getter method
+	return _is_fading
+
 func _ready():
 	fade_rect.modulate = Color(1, 1, 1, 0) 
 	fade_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	visible = false
 
-# NO 'async' keyword here
 func fade_out(duration: float = 0.5): 
 	if _is_fading:
 		print("FadeOverlay: Already fading, ignoring new fade_out request.")
-		# Emit signal immediately if you want to signify it "finished" doing nothing
-		# emit_signal("fade_finished", "out_ignored") 
-		return # Or return a value indicating it was ignored
+		return
 
 	_is_fading = true
 	visible = true 
@@ -28,7 +28,6 @@ func fade_out(duration: float = 0.5):
 	tween.set_parallel(true) 
 	tween.tween_property(fade_rect, "modulate:a", 1.0, duration).set_trans(Tween.TRANS_SINE)
 	
-	# This is the crucial part for smooth visual updates
 	var time_elapsed = 0.0
 	while is_instance_valid(tween) and tween.is_running():
 		time_elapsed += get_process_delta_time()
@@ -38,18 +37,15 @@ func fade_out(duration: float = 0.5):
 			break
 		await get_tree().process_frame # This makes this function awaitable
 
-	# Ensure final state after loop (in case of safety break or if tween finished but loop exited)
 	fade_rect.modulate.a = 1.0
 	
 	print("FadeOverlay: Visual fade_out tween considered FINISHED.")
 	_is_fading = false
 	emit_signal("fade_finished", "out")
 
-# NO 'async' keyword here
 func fade_in(duration: float = 0.5):
 	if _is_fading:
 		print("FadeOverlay: Already fading, ignoring new fade_in request.")
-		# emit_signal("fade_finished", "in_ignored")
 		return
 			
 	_is_fading = true
@@ -77,7 +73,6 @@ func fade_in(duration: float = 0.5):
 	_is_fading = false
 	emit_signal("fade_finished", "in")
 
-# Non-async versions if you prefer not to use await in the caller
 func start_fade_out(duration: float = 0.5):
 	if _is_fading: return
 	_is_fading = true
