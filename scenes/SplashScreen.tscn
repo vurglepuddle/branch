@@ -1,0 +1,19 @@
+[gd_scene load_steps=4 format=3 uid="uid://c67mv8fjsyn6v"]
+
+[ext_resource type="Script" path="res://scripts/core/SplashScreen.gd" id="1_38yxe"]
+[ext_resource type="Texture2D" uid="uid://dj43uq51l05a5" path="res://sprites/BG.png" id="2_htqm8"]
+[ext_resource type="PackedScene" uid="uid://u7yk5284rc4k" path="res://scenes/Star.tscn" id="2_hxmgo"]
+
+[node name="SplashScreen" type="Node2D"]
+script = ExtResource("1_38yxe")
+star_scene = ExtResource("2_hxmgo")
+
+[node name="StarSpawnRegion" type="Node2D" parent="."]
+
+[node name="StarSpawnTimer" type="Timer" parent="."]
+
+[node name="Bg" type="Sprite2D" parent="."]
+z_index = -100
+position = Vector2(274, 612)
+scale = Vector2(0.298354, 0.298354)
+texture = ExtResource("2_htqm8")

@@ -51,15 +51,19 @@ func _ready():
 	if GlobalSettings: # Check if the Autoload script exists
 		current_difficulty_str = GlobalSettings.current_difficulty
 		print("Grid: Loaded difficulty from GlobalSettings: " + current_difficulty_str)
-	if FadeOverlay:
-		FadeOverlay.fade_rect.modulate = Color(1,1,1,1) 
-		FadeOverlay.visible = true
-		FadeOverlay.start_fade_in(0.5)
 	else:
 		# Fallback if GlobalSettings is not found (e.g., running grid.tscn directly for testing)
 		current_difficulty_str = "torrero" # Your previous default value
 		printerr("Grid: GlobalSettings Autoload not found! Using default difficulty: " + current_difficulty_str)
 	load_level_for_current_difficulty()
+	if FadeOverlay:
+		FadeOverlay.fade_rect.color = Color.BLACK
+		FadeOverlay.fade_rect.modulate.a = 1.0 
+		FadeOverlay.visible = true
+		FadeOverlay.start_fade_in(0.5)
+		print("Grid: Fade-in initiated.")
+	else:
+		printerr("Grid: FadeOverlay Autoload not found! Scene will appear abruptly.")
 
 func load_level_for_current_difficulty():
 	print("--- load_level_for_current_difficulty START for: %s ---" % self.current_difficulty_str)
@@ -181,18 +185,6 @@ func _input(event: InputEvent):
 		if AudioManager: 
 			AudioManager.play_difficulty_music(current_difficulty_str)
 		return branches
-
-func _change_scene_with_fade_from_grid(scene_path: String, fade_duration: float = 0.5):
-	if FadeOverlay and not FadeOverlay._is_fading:
-		await FadeOverlay.fade_out(fade_duration)
-		var error_code = get_tree().change_scene_to_file(scene_path)
-		if error_code != OK:
-			printerr("Grid: Failed to change scene to: ", scene_path, ". Error code: ", error_code)
-			await FadeOverlay.fade_in(fade_duration)
-		# New scene (main_menu) will handle its own fade-in.
-	else:
-		printerr("Grid: FadeOverlay not available or busy, changing scene directly.")
-		get_tree().change_scene_to_file(scene_path)
 
 func center_grid():
 	var screen_size = get_viewport_rect().size
@@ -598,11 +590,12 @@ func _spawn_single_leaf(branch: BranchNode, timer_node: Timer):
 
 func _return_to_main_menu():
 	level_won_waiting_for_exit_input = false # Reset the flag
-	# Optionally, stop any ongoing music or sounds specific to the grid scene
-	# if AudioManager and is_instance_valid(AudioManager.bg_player):
-	#    AudioManager.bg_player.stop() # Or fade out
 
-	_change_scene_with_fade_from_grid("res://scenes/main_menu.tscn", 0.2)
+	if AudioManager:
+		# AudioManager._load_and_set_music_track_from_stream(null, false, false, 0.1) # Stop music quickly
+		pass
+
+	SceneChanger.change_scene_with_fade("res://scenes/main_menu.tscn", 0.2)
 
 
 #func run_batch_generation_test(difficulty_to_test: String, num_runs: int = 100):

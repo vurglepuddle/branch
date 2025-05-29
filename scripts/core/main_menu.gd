@@ -14,7 +14,7 @@ extends Control # res://scenes/main_menu.gd
 
 # Game settings variables
 var difficulty_levels = ["baby", "intern", "profi", "master", "expert", "torrero"]
-var current_difficulty_index: int = 0
+var current_difficulty_index: int
 
 func _ready():
 	difficulty_button.pressed.connect(_on_difficulty_button_pressed)
@@ -22,6 +22,18 @@ func _ready():
 	sfx_button.pressed.connect(_on_sfx_button_pressed)
 	music_button.pressed.connect(_on_music_button_pressed)
 	print("MainMenu: _ready() - Signals connected.")
+	
+	if GlobalSettings:
+		current_difficulty_index = GlobalSettings.last_menu_difficulty_index
+		# Ensure the loaded index is valid for the current difficulty_levels array
+		if current_difficulty_index < 0 or current_difficulty_index >= difficulty_levels.size():
+			print("MainMenu: Invalid last_menu_difficulty_index (", GlobalSettings.last_menu_difficulty_index, ") from GlobalSettings. Resetting to 0.")
+			current_difficulty_index = 0
+			GlobalSettings.last_menu_difficulty_index = 0 # Correct it in GlobalSettings too
+	else:
+		# Fallback if GlobalSettings isn't available (shouldn't happen if autoloaded)
+		current_difficulty_index = 0 
+		printerr("MainMenu: GlobalSettings not found in _ready(). Defaulting difficulty index to 0.")
 
 	if AudioManager:
 		var err_code = AudioManager.music_display_changed.connect(_on_music_display_changed)
@@ -32,21 +44,23 @@ func _ready():
 	update_difficulty_display() # Updates the text label for difficulty
 	if GlobalSettings:
 		GlobalSettings.current_difficulty = difficulty_levels[current_difficulty_index]
-	if FadeOverlay:
-		FadeOverlay.fade_rect.modulate.a = 1.0 
-		FadeOverlay.visible = true
-		print(self.name, ": Fading in scene...")
-		await FadeOverlay.fade_in(0.3)
-		print(self.name, ": Scene fade in complete.")
 
 	
 func _initialize_post_audio_manager_ready():
-	if not is_instance_valid(AudioManager) or not AudioManager.is_node_ready():
-		printerr("MainMenu: _initialize_post_audio_manager_ready - AudioManager STILL not valid or not ready!")
+	if is_instance_valid(AudioManager) and AudioManager.is_node_ready():
+		update_sfx_display()
+
+	_update_difficulty_preview() # Generate preview for the loaded/default difficulty
+
+	if FadeOverlay:
+		FadeOverlay.fade_rect.color = Color.BLACK
+		FadeOverlay.fade_rect.modulate.a = 1.0 
+		FadeOverlay.visible = true
+		print(self.name, ": Fading in scene (from _initialize_post_audio_manager_ready)...")
+		await FadeOverlay.fade_in(0.3) # Using 0.3s
+		print(self.name, ": Scene fade in complete (from _initialize_post_audio_manager_ready).")
 	else:
-		update_sfx_display() # Safe to call now
-		
-	_update_difficulty_preview() 
+		printerr("MainMenu: _initialize_post_audio_manager_ready - FadeOverlay NOT FOUND.")
 	
 # --- Signal Callbacks ---
 func _on_difficulty_button_pressed():
@@ -55,6 +69,7 @@ func _on_difficulty_button_pressed():
 	
 	if GlobalSettings:
 		GlobalSettings.current_difficulty = difficulty_levels[current_difficulty_index]
+		GlobalSettings.last_menu_difficulty_index = current_difficulty_index
 	
 	if AudioManager: AudioManager.play_named_sfx("beep_sound")
 	
@@ -97,22 +112,13 @@ func _on_start_button_pressed():
 	if AudioManager: AudioManager.play_named_sfx("beep_sound")
 	var selected_difficulty = difficulty_levels[current_difficulty_index]
 	GlobalSettings.current_difficulty = selected_difficulty
+	GlobalSettings.last_menu_difficulty_index = current_difficulty_index
 	print("MainMenu: Set GlobalSettings.current_difficulty to: " + GlobalSettings.current_difficulty)
 	print("Starting game with difficulty: " + difficulty_levels[current_difficulty_index])
-	_change_scene_with_fade("res://scenes/Grid.tscn", 0.3)
 	
-func _change_scene_with_fade(scene_path: String, fade_duration: float = 0.3):
-	if FadeOverlay and not FadeOverlay._is_fading: # Check if FadeOverlay exists and isn't already busy
-		await FadeOverlay.fade_out(fade_duration)
-		var error_code = get_tree().change_scene_to_file(scene_path)
-		if error_code != OK:
-			printerr("Failed to change scene to: ", scene_path, ". Error code: ", error_code)
-			await FadeOverlay.fade_in(fade_duration) 
-		else:
-			pass 
-	else:
-		printerr("FadeOverlay not available, changing scene directly to ", scene_path)
-		get_tree().change_scene_to_file(scene_path)
+	# Use the global SceneChanger
+	SceneChanger.change_scene_with_fade("res://scenes/Grid.tscn", 0.3)
+	
 
 func _on_sfx_button_pressed():
 	if AudioManager:
