@@ -17,8 +17,6 @@ var difficulty_levels = ["baby", "intern", "profi", "master", "expert", "torrero
 var current_difficulty_index: int = 0
 
 func _ready():
-	print("MainMenu: _ready() - START")
-
 	difficulty_button.pressed.connect(_on_difficulty_button_pressed)
 	start_button.pressed.connect(_on_start_button_pressed)
 	sfx_button.pressed.connect(_on_sfx_button_pressed)
@@ -26,46 +24,30 @@ func _ready():
 	print("MainMenu: _ready() - Signals connected.")
 
 	if AudioManager:
-		#print("MainMenu: _ready() - AudioManager exists. Connecting music_display_changed signal...")
 		var err_code = AudioManager.music_display_changed.connect(_on_music_display_changed)
-		# You can add an error print here if err_code != OK if you want
-		#print("MainMenu: _ready() - Scheduling _initialize_post_audio_manager_ready via call_deferred.")
 		call_deferred("_initialize_post_audio_manager_ready")
 	else:
 		printerr("MainMenu: _ready() - AudioManager NOT FOUND. Some audio features might not work.")
-		# update_sfx_display() was here, but it depends on AudioManager. Moved to deferred call.
 		
 	update_difficulty_display() # Updates the text label for difficulty
-	#print("MainMenu: _ready() - Initial difficulty text label updated.")
-	
 	if GlobalSettings:
 		GlobalSettings.current_difficulty = difficulty_levels[current_difficulty_index]
-		#print("MainMenu: _ready() - Initial GlobalSettings.current_difficulty set.")
-	# else:
-		# printerr("MainMenu: _ready() - GlobalSettings Autoload not found!") # Optional error
+	if FadeOverlay:
+		FadeOverlay.fade_rect.modulate.a = 1.0 
+		FadeOverlay.visible = true
+		print(self.name, ": Fading in scene...")
+		await FadeOverlay.fade_in(0.3)
+		print(self.name, ": Scene fade in complete.")
 
-	#print("MainMenu: _ready() - Initial setup finished, deferred tasks scheduled.")
 	
 func _initialize_post_audio_manager_ready():
-	#print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-	#print("MainMenu: _initialize_post_audio_manager_ready() CALLED via call_deferred.")
-	#print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-
 	if not is_instance_valid(AudioManager) or not AudioManager.is_node_ready():
 		printerr("MainMenu: _initialize_post_audio_manager_ready - AudioManager STILL not valid or not ready!")
 	else:
-		#print("MainMenu: _initialize_post_audio_manager_ready - AudioManager is confirmed ready.")
 		update_sfx_display() # Safe to call now
-		#print("MainMenu: _initialize_post_audio_manager_ready - SFX display updated.")
-	
-
-	#print("MainMenu: _initialize_post_audio_manager_ready - About to call _update_difficulty_preview for the first time.")
+		
 	_update_difficulty_preview() 
-	#print("MainMenu: _initialize_post_audio_manager_ready - _update_difficulty_preview CALL FINISHED.")
-	#print("MainMenu: _initialize_post_audio_manager_ready - END")
-
-
-
+	
 # --- Signal Callbacks ---
 func _on_difficulty_button_pressed():
 	current_difficulty_index = (current_difficulty_index + 1) % difficulty_levels.size()
@@ -110,14 +92,27 @@ func _update_difficulty_preview():
 				 "'. SubViewport size: ", word_preview_renderer.size if is_instance_valid(word_preview_renderer) else "renderer invalid")
 		difficulty_preview_display.texture = null
 		difficulty_preview_display.custom_minimum_size = Vector2.ZERO
+		
 func _on_start_button_pressed():
 	if AudioManager: AudioManager.play_named_sfx("beep_sound")
-	# Store difficulty for the game scene to pick up
 	var selected_difficulty = difficulty_levels[current_difficulty_index]
 	GlobalSettings.current_difficulty = selected_difficulty
 	print("MainMenu: Set GlobalSettings.current_difficulty to: " + GlobalSettings.current_difficulty)
 	print("Starting game with difficulty: " + difficulty_levels[current_difficulty_index])
-	get_tree().change_scene_to_file("res://scenes/grid.tscn")
+	_change_scene_with_fade("res://scenes/Grid.tscn", 0.3)
+	
+func _change_scene_with_fade(scene_path: String, fade_duration: float = 0.3):
+	if FadeOverlay and not FadeOverlay._is_fading: # Check if FadeOverlay exists and isn't already busy
+		await FadeOverlay.fade_out(fade_duration)
+		var error_code = get_tree().change_scene_to_file(scene_path)
+		if error_code != OK:
+			printerr("Failed to change scene to: ", scene_path, ". Error code: ", error_code)
+			await FadeOverlay.fade_in(fade_duration) 
+		else:
+			pass 
+	else:
+		printerr("FadeOverlay not available, changing scene directly to ", scene_path)
+		get_tree().change_scene_to_file(scene_path)
 
 func _on_sfx_button_pressed():
 	if AudioManager:
@@ -127,6 +122,7 @@ func _on_sfx_button_pressed():
 func _on_music_button_pressed():
 	if AudioManager:
 		AudioManager.toggle_music_style_and_state() # This will emit the signal
+		
 # --- UI Update Functions ---
 
 func update_difficulty_display():
@@ -141,4 +137,3 @@ func _on_music_display_changed(display_name: String):
 		printerr("MainMenu: music_indicator_label NOT VALID in _on_music_display_changed!")
 		return
 	music_indicator_label.text = display_name
-		#

@@ -7,6 +7,7 @@ var generator = PuzzleGenerator.new()
 @export var BranchScene: PackedScene
 #@onready var audio_manager: Node = $AudioManager
 
+var level_won_waiting_for_exit_input: bool = false
 var is_level_complete_animation_playing: bool = false # Prevent re-triggering
 
 # The size of the grid
@@ -50,6 +51,10 @@ func _ready():
 	if GlobalSettings: # Check if the Autoload script exists
 		current_difficulty_str = GlobalSettings.current_difficulty
 		print("Grid: Loaded difficulty from GlobalSettings: " + current_difficulty_str)
+	if FadeOverlay:
+		FadeOverlay.fade_rect.modulate = Color(1,1,1,1) 
+		FadeOverlay.visible = true
+		FadeOverlay.start_fade_in(0.5)
 	else:
 		# Fallback if GlobalSettings is not found (e.g., running grid.tscn directly for testing)
 		current_difficulty_str = "torrero" # Your previous default value
@@ -133,6 +138,27 @@ func load_level_for_current_difficulty():
 
 
 func _input(event: InputEvent):
+	if level_won_waiting_for_exit_input:
+			var should_return_to_menu = false
+			if event is InputEventKey and event.is_pressed() and not event.is_echo():
+				print("Grid: Key pressed after win. Returning to menu.")
+				should_return_to_menu = true
+			elif event is InputEventMouseButton and event.is_pressed():
+				print("Grid: Mouse button pressed after win. Returning to menu.")
+				should_return_to_menu = true
+			elif event is InputEventScreenTouch and event.is_pressed(): # For touch devices
+				print("Grid: Screen touched after win. Returning to menu.")
+				should_return_to_menu = true
+
+			if should_return_to_menu:
+				# Consume the input BEFORE changing the scene
+				get_viewport().set_input_as_handled() 
+				_return_to_main_menu()
+				# No 'return' needed here if _return_to_main_menu changes scene, 
+				# as this node will likely be gone before further _input processing.
+				# However, to be absolutely safe and prevent further code in _input from running for this event:
+				return 
+	
 	if is_level_complete_animation_playing:
 		return
 
@@ -140,7 +166,6 @@ func _input(event: InputEvent):
 	var new_selected_difficulty = ""
 
 	if event is InputEventKey and event.is_pressed() and not event.is_echo():
-		# Using event.keycode directly for comparison with your difficulty_key_map
 		var pressed_key = event.keycode 
 		if difficulty_key_map.has(pressed_key):
 			new_selected_difficulty = difficulty_key_map[pressed_key]
@@ -148,15 +173,26 @@ func _input(event: InputEvent):
 				current_difficulty_str = new_selected_difficulty
 				difficulty_changed_by_hotkey = true
 				print("Grid: Difficulty changed by hotkey to: " + current_difficulty_str)
-				
-				# Handle the input so it doesn't propagate further if a difficulty key was pressed
 				get_viewport().set_input_as_handled() 
 
 	if difficulty_changed_by_hotkey:
-		load_level_for_current_difficulty() # Reload the level with the new difficulty
-		if AudioManager: # Also update the music
+		level_won_waiting_for_exit_input = false # Reset if they change difficulty (reloads level)
+		load_level_for_current_difficulty() 
+		if AudioManager: 
 			AudioManager.play_difficulty_music(current_difficulty_str)
-		return # If difficulty changed, no need to process other inputs in this frame for branches
+		return branches
+
+func _change_scene_with_fade_from_grid(scene_path: String, fade_duration: float = 0.5):
+	if FadeOverlay and not FadeOverlay._is_fading:
+		await FadeOverlay.fade_out(fade_duration)
+		var error_code = get_tree().change_scene_to_file(scene_path)
+		if error_code != OK:
+			printerr("Grid: Failed to change scene to: ", scene_path, ". Error code: ", error_code)
+			await FadeOverlay.fade_in(fade_duration)
+		# New scene (main_menu) will handle its own fade-in.
+	else:
+		printerr("Grid: FadeOverlay not available or busy, changing scene directly.")
+		get_tree().change_scene_to_file(scene_path)
 
 func center_grid():
 	var screen_size = get_viewport_rect().size
@@ -182,7 +218,7 @@ func _process(_delta):
 		
 	if Input.is_action_just_pressed("ui_accepted"):
 		print("Test triggered for difficulty: %s" % self.current_difficulty_str)
-		run_batch_generation_test(self.current_difficulty_str, 200)
+		#run_batch_generation_test(self.current_difficulty_str, 200)
 
 func init_branches(g_width: int, g_height: int, b_scene: PackedScene,
 				   initial_prim_density: float, min_prim_abs_tiles: int,
@@ -448,7 +484,6 @@ func start_blossom_sequence():
 		# For example: show_level_complete_screen_after_delay(2.0)
 		is_level_complete_animation_playing = false # Reset flag
 		return
-
 	# Shuffle the list to make the order random beyond the first few
 	alive_terminal_branches.shuffle()
 
@@ -463,28 +498,19 @@ func start_blossom_sequence():
 		if i == 0: # First terminal branch
 			current_delay = randf_range(0.1, max_initial_delay) # Random delay between 0.1 and N
 		elif i == 1: # Second terminal branch
-			# This delay is *additional* to the first one's start,
-			# or could be relative to game time if preferred.
-			# Let's make it a delay *after* the previous one started its own delay.
+
 			current_delay = randf_range(0.05, max_subsequent_delay) # Random delay between 0.05 and Y
 																  # (0.05 to avoid exact same time)
 		else: # Subsequent branches
 			# Shorter, more rapid, slightly overlapping delays
 			current_delay = randf_range(0.05, 0.5) # e.g., 0.05 to 0.5 seconds
 
-		# Create a timer for this specific branch's animation start
-		# The timer starts *after* the accumulated delay from previous branches
 		var actual_start_delay = overall_animation_delay_accumulator + current_delay
 		
-		# Using await for cleaner async-like code within this function
-		# This requires start_blossom_sequence to be an async function if you use await directly
-		# For non-async, we'd use Timer nodes manually. Let's use Timer nodes for broader compatibility.
-
 		var individual_timer = Timer.new()
 		individual_timer.wait_time = actual_start_delay
 		individual_timer.one_shot = true
-		# Connect its timeout signal to a method that plays the animation for THIS branch
-		# We need to pass the branch_to_animate to the callback.
+
 		individual_timer.connect("timeout", Callable(self, "_play_single_blossom").bind(branch_to_animate, individual_timer))
 		add_child(individual_timer) # Timer needs to be in the scene tree to process
 		individual_timer.start()
@@ -502,28 +528,30 @@ func start_blossom_sequence():
 	final_timer.connect("timeout", Callable(self, "_finish_level_complete_sequence").bind(final_timer))
 	add_child(final_timer)
 	final_timer.start()
-	print("Blossom sequence initiated. Total estimated duration: ~%s seconds" % cleanup_delay)
+	#print("Blossom sequence initiated. Total estimated duration: ~%s seconds" % cleanup_delay)
 
 func _play_single_blossom(branch: BranchNode, timer_node: Timer):
 	if is_instance_valid(branch):
-		print("Playing blossom for branch at: (%s, %s)" % [branch.grid_x, branch.grid_y])
+		#print("Playing blossom for branch at: (%s, %s)" % [branch.grid_x, branch.grid_y])
 		branch.play_terminal_blossom() # Call the animation player on the branch
 	if is_instance_valid(timer_node):
 		timer_node.queue_free() # Clean up the timer
 
 func _finish_level_complete_sequence(timer_node: Timer):
 	print("Level complete animation sequence finished.")
-	is_level_complete_animation_playing = false # Reset flag for next level
+	is_level_complete_animation_playing = false # Reset this flag as animations are done
+	
+	level_won_waiting_for_exit_input = true
+	print("Grid: Now waiting for input to return to menu.")
 
 	if is_instance_valid(timer_node):
-		timer_node.queue_free() # Clean up the final timer
+		timer_node.queue_free()
 
 func start_leaf_spawn_sequence():
 	var eligible_leaf_branches = []
 	for x in range(grid_width):
 		for y in range(grid_height):
 			var branch: BranchNode = branches[x][y]
-			# Leaves for STRAIGHT and THREE_WAY, not TERMINAL or BEND, and must be ALIVE
 			if (branch.branch_type == BranchType.STRAIGHT or branch.branch_type == BranchType.THREE) \
 			   and branch.state == "alive":
 				eligible_leaf_branches.append(branch)
@@ -568,101 +596,109 @@ func _spawn_single_leaf(branch: BranchNode, timer_node: Timer):
 		timer_node.queue_free()
 
 
+func _return_to_main_menu():
+	level_won_waiting_for_exit_input = false # Reset the flag
+	# Optionally, stop any ongoing music or sounds specific to the grid scene
+	# if AudioManager and is_instance_valid(AudioManager.bg_player):
+	#    AudioManager.bg_player.stop() # Or fade out
 
-func run_batch_generation_test(difficulty_to_test: String, num_runs: int = 100):
-	if not difficulty_levels.has(difficulty_to_test):
-		printerr("Test Error: Difficulty '%s' not found." % difficulty_to_test)
-		return
-		
-	print("\n--- Starting Batch Generation Test ---")
-	print("Difficulty: %s, Runs: %s" % [difficulty_to_test, num_runs])
-	var current_difficulty_settings = difficulty_levels[difficulty_to_test]
-	
-	var g_width = current_difficulty_settings.size[0]
-	var g_height = current_difficulty_settings.size[1]
-	var b_scene = BranchScene # Assuming BranchScene is loaded and valid
+	_change_scene_with_fade_from_grid("res://scenes/main_menu.tscn", 0.2)
 
-	var prim_density = current_difficulty_settings.prim_initial_density_factor
-	var prim_min = current_difficulty_settings.prim_min_tiles
-	var final_target_density = current_difficulty_settings.final_target_density_factor
-	var final_variation = current_difficulty_settings.final_density_variation_factor
-	
-	# DETERMINE if this test is for a toroidal grid
-	var is_toroidal_for_test: bool = (difficulty_to_test == "torrero") # Or however you determine this
 
-	# GET max_gen_attempts from difficulty settings (assuming you added it as per Option 1 previously)
-	var max_gen_attempts_per_run: int
-	if current_difficulty_settings.has("max_gen_attempts"):
-		max_gen_attempts_per_run = current_difficulty_settings.max_gen_attempts
-	else:
-		printerr("Test Warning: 'max_gen_attempts' not defined for difficulty '%s'. Defaulting to 35." % difficulty_to_test)
-		max_gen_attempts_per_run = 35 # Fallback, but you should define it
-
-	var num_total_cells = g_width * g_height
-	var base_desired_final = floor(num_total_cells * final_target_density)
-	var variation_abs = floor(base_desired_final * final_variation)
-	var min_acceptable_final = max(1, base_desired_final - variation_abs)
-	# Clamp min_acceptable_final: it cannot be more than total cells, and not more than prim_min_tiles (if prim_min_tiles is an absolute floor from Prim's generation)
-	min_acceptable_final = min(min_acceptable_final, num_total_cells)
-	# Consider if min_acceptable_final should also be min(min_acceptable_final, prim_min) if prim_min is a hard floor
-	# For now, let's assume prim_min is just for the Prim's stage, and final density is the true target.
-
-	var successes = 0
-	var total_attempts_for_successes = 0
-	var failed_to_meet_density_count = 0 # Renamed for clarity
-	var active_tile_counts_successful_runs = [] # Renamed for clarity
-
-	for i in range(num_runs):
-		var current_run_inner_attempts = 0 # Renamed for clarity
-		var achieved_density_this_run = false # Renamed for clarity
-		var last_active_count_this_run = 0
-
-		# This inner while loop simulates the loop in your grid.gd's init_branches
-		while current_run_inner_attempts < max_gen_attempts_per_run:
-			current_run_inner_attempts += 1
-			
-			# CRITICAL UPDATE: Pass the is_toroidal_for_test flag
-			var puzzle_data = generator.generate_solvable_puzzle(
-									g_width, g_height, b_scene, 
-									prim_density, prim_min,
-									is_toroidal_for_test # Pass the toroidal flag
-								) 
-			
-			var active_count = 0
-			if puzzle_data and puzzle_data.has("branches"):
-				for x_col in puzzle_data.branches:
-					for branch_node in x_col:
-						if branch_node and branch_node.branch_type != BranchType.EMPTY:
-							active_count += 1
-			last_active_count_this_run = active_count
-
-			if active_count >= min_acceptable_final:
-				successes += 1
-				total_attempts_for_successes += current_run_inner_attempts
-				active_tile_counts_successful_runs.append(active_count)
-				achieved_density_this_run = true
-				break # Success for this run (this puzzle generation met criteria)
-		
-		if not achieved_density_this_run:
-			failed_to_meet_density_count += 1
-			# Optionally log details of failed runs:
-			# print("Run %s/%s FAILED density requirement. Got %s tiles. (Target min: %s, Max attempts: %s)" % [i+1, num_runs, last_active_count_this_run, min_acceptable_final, max_gen_attempts_per_run])
-
-	print("\n--- Batch Test Results ---")
-	print("Difficulty Tested: %s (Toroidal: %s)" % [difficulty_to_test, is_toroidal_for_test])
-	print("Target Min Acceptable Final Tiles: %s" % min_acceptable_final)
-	print("Max Generation Attempts Per Run: %s" % max_gen_attempts_per_run)
-	print("Total Test Runs: %s" % num_runs)
-	print("Successful Generations (met density): %s (%s%%)" % [successes, float(successes)/num_runs * 100.0 if num_runs > 0 else 0.0])
-	print("Failed to Meet Density (within %s attempts each): %s" % [max_gen_attempts_per_run, failed_to_meet_density_count])
-	
-	if successes > 0:
-		print("Average Attempts per Successful Generation: %.2f" % (float(total_attempts_for_successes) / successes))
-		
-		var sum_counts = 0
-		for c_val in active_tile_counts_successful_runs: sum_counts += c_val # Renamed c to c_val
-		print("Average Active Tiles in Successful Runs: %.2f" % (float(sum_counts) / successes))
-		active_tile_counts_successful_runs.sort()
-		print("Min Active Tiles in Successful Runs: %s" % active_tile_counts_successful_runs[0] if active_tile_counts_successful_runs else "N/A")
-		print("Max Active Tiles in Successful Runs: %s" % active_tile_counts_successful_runs[-1] if active_tile_counts_successful_runs else "N/A")
-	print("---------------------------\n")
+#func run_batch_generation_test(difficulty_to_test: String, num_runs: int = 100):
+	#if not difficulty_levels.has(difficulty_to_test):
+		#printerr("Test Error: Difficulty '%s' not found." % difficulty_to_test)
+		#return
+		#
+	#print("\n--- Starting Batch Generation Test ---")
+	#print("Difficulty: %s, Runs: %s" % [difficulty_to_test, num_runs])
+	#var current_difficulty_settings = difficulty_levels[difficulty_to_test]
+	#
+	#var g_width = current_difficulty_settings.size[0]
+	#var g_height = current_difficulty_settings.size[1]
+	#var b_scene = BranchScene # Assuming BranchScene is loaded and valid
+#
+	#var prim_density = current_difficulty_settings.prim_initial_density_factor
+	#var prim_min = current_difficulty_settings.prim_min_tiles
+	#var final_target_density = current_difficulty_settings.final_target_density_factor
+	#var final_variation = current_difficulty_settings.final_density_variation_factor
+	#
+	## DETERMINE if this test is for a toroidal grid
+	#var is_toroidal_for_test: bool = (difficulty_to_test == "torrero") # Or however you determine this
+#
+	## GET max_gen_attempts from difficulty settings (assuming you added it as per Option 1 previously)
+	#var max_gen_attempts_per_run: int
+	#if current_difficulty_settings.has("max_gen_attempts"):
+		#max_gen_attempts_per_run = current_difficulty_settings.max_gen_attempts
+	#else:
+		#printerr("Test Warning: 'max_gen_attempts' not defined for difficulty '%s'. Defaulting to 35." % difficulty_to_test)
+		#max_gen_attempts_per_run = 35 # Fallback, but you should define it
+#
+	#var num_total_cells = g_width * g_height
+	#var base_desired_final = floor(num_total_cells * final_target_density)
+	#var variation_abs = floor(base_desired_final * final_variation)
+	#var min_acceptable_final = max(1, base_desired_final - variation_abs)
+	## Clamp min_acceptable_final: it cannot be more than total cells, and not more than prim_min_tiles (if prim_min_tiles is an absolute floor from Prim's generation)
+	#min_acceptable_final = min(min_acceptable_final, num_total_cells)
+	## Consider if min_acceptable_final should also be min(min_acceptable_final, prim_min) if prim_min is a hard floor
+	## For now, let's assume prim_min is just for the Prim's stage, and final density is the true target.
+#
+	#var successes = 0
+	#var total_attempts_for_successes = 0
+	#var failed_to_meet_density_count = 0 # Renamed for clarity
+	#var active_tile_counts_successful_runs = [] # Renamed for clarity
+#
+	#for i in range(num_runs):
+		#var current_run_inner_attempts = 0 # Renamed for clarity
+		#var achieved_density_this_run = false # Renamed for clarity
+		#var last_active_count_this_run = 0
+#
+		## This inner while loop simulates the loop in your grid.gd's init_branches
+		#while current_run_inner_attempts < max_gen_attempts_per_run:
+			#current_run_inner_attempts += 1
+			#
+			## CRITICAL UPDATE: Pass the is_toroidal_for_test flag
+			#var puzzle_data = generator.generate_solvable_puzzle(
+									#g_width, g_height, b_scene, 
+									#prim_density, prim_min,
+									#is_toroidal_for_test # Pass the toroidal flag
+								#) 
+			#
+			#var active_count = 0
+			#if puzzle_data and puzzle_data.has("branches"):
+				#for x_col in puzzle_data.branches:
+					#for branch_node in x_col:
+						#if branch_node and branch_node.branch_type != BranchType.EMPTY:
+							#active_count += 1
+			#last_active_count_this_run = active_count
+#
+			#if active_count >= min_acceptable_final:
+				#successes += 1
+				#total_attempts_for_successes += current_run_inner_attempts
+				#active_tile_counts_successful_runs.append(active_count)
+				#achieved_density_this_run = true
+				#break # Success for this run (this puzzle generation met criteria)
+		#
+		#if not achieved_density_this_run:
+			#failed_to_meet_density_count += 1
+			## Optionally log details of failed runs:
+			## print("Run %s/%s FAILED density requirement. Got %s tiles. (Target min: %s, Max attempts: %s)" % [i+1, num_runs, last_active_count_this_run, min_acceptable_final, max_gen_attempts_per_run])
+#
+	#print("\n--- Batch Test Results ---")
+	#print("Difficulty Tested: %s (Toroidal: %s)" % [difficulty_to_test, is_toroidal_for_test])
+	#print("Target Min Acceptable Final Tiles: %s" % min_acceptable_final)
+	#print("Max Generation Attempts Per Run: %s" % max_gen_attempts_per_run)
+	#print("Total Test Runs: %s" % num_runs)
+	#print("Successful Generations (met density): %s (%s%%)" % [successes, float(successes)/num_runs * 100.0 if num_runs > 0 else 0.0])
+	#print("Failed to Meet Density (within %s attempts each): %s" % [max_gen_attempts_per_run, failed_to_meet_density_count])
+	#
+	#if successes > 0:
+		#print("Average Attempts per Successful Generation: %.2f" % (float(total_attempts_for_successes) / successes))
+		#
+		#var sum_counts = 0
+		#for c_val in active_tile_counts_successful_runs: sum_counts += c_val # Renamed c to c_val
+		#print("Average Active Tiles in Successful Runs: %.2f" % (float(sum_counts) / successes))
+		#active_tile_counts_successful_runs.sort()
+		#print("Min Active Tiles in Successful Runs: %s" % active_tile_counts_successful_runs[0] if active_tile_counts_successful_runs else "N/A")
+		#print("Max Active Tiles in Successful Runs: %s" % active_tile_counts_successful_runs[-1] if active_tile_counts_successful_runs else "N/A")
+	#print("---------------------------\n")
