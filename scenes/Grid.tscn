@@ -4,11 +4,19 @@
 [ext_resource type="PackedScene" uid="uid://coq63njxe520r" path="res://scenes/Branch.tscn" id="2_uk0hh"]
 [ext_resource type="AudioStream" uid="uid://dx5npcgh34dso" path="res://audio/other/beep_sound.wav" id="3_brclb"]
 [ext_resource type="AudioStream" uid="uid://bbxc0ho8xf6qd" path="res://audio/other/opening.mp3" id="4_6cn65"]
-[ext_resource type="Texture2D" uid="uid://dq8501f1a05hg" path="res://sprites/branches/bg2.png" id="6_8o5la"]
+[ext_resource type="Texture2D" uid="uid://dj43uq51l05a5" path="res://sprites/BG.png" id="5_c7re5"]
 
 [node name="Grid" type="Node2D"]
 script = ExtResource("1_p3xk4")
 BranchScene = ExtResource("2_uk0hh")
+
+[node name="ColorRect2" type="ColorRect" parent="."]
+z_index = -99
+offset_left = -3.0
+offset_top = -4.0
+offset_right = 507.0
+offset_bottom = 1220.0
+color = Color(0, 0, 0.658824, 1)
 
 [node name="background_sprite" type="Sprite2D" parent="."]
 visible = false
@@ -42,13 +50,10 @@ offset_right = 272.0
 offset_bottom = -21.0
 text = "Music test"
 
-[node name="TextureRect" type="TextureRect" parent="."]
-z_index = -10
-offset_left = -204.0
-offset_top = -169.0
-offset_right = 804.0
-offset_bottom = 1353.0
-texture = ExtResource("6_8o5la")
-stretch_mode = 1
+[node name="Bg_other" type="Sprite2D" parent="."]
+z_index = -100
+position = Vector2(255, 580)
+scale = Vector2(0.298354, 0.298354)
+texture = ExtResource("5_c7re5")
 
 [connection signal="pressed" from="TestMusicButton" to="." method="_on_test_music_button_pressed"]
