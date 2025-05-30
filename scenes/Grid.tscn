@@ -4,7 +4,7 @@
 [ext_resource type="PackedScene" uid="uid://coq63njxe520r" path="res://scenes/Branch.tscn" id="2_uk0hh"]
 [ext_resource type="AudioStream" uid="uid://dx5npcgh34dso" path="res://audio/other/beep_sound.wav" id="3_brclb"]
 [ext_resource type="AudioStream" uid="uid://bbxc0ho8xf6qd" path="res://audio/other/opening.mp3" id="4_6cn65"]
-[ext_resource type="Texture2D" uid="uid://dj43uq51l05a5" path="res://sprites/BG.png" id="5_c7re5"]
+[ext_resource type="Texture2D" uid="uid://cbtt7uucvtx6s" path="res://sprites/BG2.png" id="5_iap2h"]
 
 [node name="Grid" type="Node2D"]
 script = ExtResource("1_p3xk4")
@@ -52,8 +52,8 @@ text = "Music test"
 
 [node name="Bg_other" type="Sprite2D" parent="."]
 z_index = -100
-position = Vector2(255, 580)
+position = Vector2(255, 575)
 scale = Vector2(0.298354, 0.298354)
-texture = ExtResource("5_c7re5")
+texture = ExtResource("5_iap2h")
 
 [connection signal="pressed" from="TestMusicButton" to="." method="_on_test_music_button_pressed"]
