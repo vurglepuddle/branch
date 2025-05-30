@@ -1,0 +1,91 @@
+[gd_resource type="Theme" load_steps=7 format=3 uid="uid://mecrr0hcgwnn"]
+
+[ext_resource type="FontFile" uid="uid://pcau7604lmbc" path="res://fonts/vetka.ttf" id="1_ermc0"]
+
+[sub_resource type="FontVariation" id="FontVariation_q14df"]
+base_font = ExtResource("1_ermc0")
+variation_embolden = 1.2
+
+[sub_resource type="FontVariation" id="FontVariation_foxf4"]
+base_font = ExtResource("1_ermc0")
+variation_embolden = 1.2
+variation_transform = Transform2D(1, 0.2, 0, 1, 0, 0)
+
+[sub_resource type="FontVariation" id="FontVariation_k6f1r"]
+base_font = ExtResource("1_ermc0")
+variation_transform = Transform2D(1, 0.2, 0, 1, 0, 0)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bouvo"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(1, 1, 1, 0.75)
+draw_center = false
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+corner_detail = 5
+expand_margin_left = 2.0
+expand_margin_top = 2.0
+expand_margin_right = 2.0
+expand_margin_bottom = 2.0
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_a04y2"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+
+[resource]
+Button/font_sizes/font_size = 30
+Label/colors/font_color = Color(1, 1, 1, 1)
+Label/colors/font_outline_color = Color(0, 0, 0, 1)
+Label/colors/font_shadow_color = Color(0, 0, 0, 1)
+Label/constants/line_spacing = -10
+Label/constants/outline_size = 0
+Label/constants/shadow_offset_x = 3
+Label/constants/shadow_offset_y = 3
+Label/constants/shadow_outline_size = 0
+Label/font_sizes/font_size = 32
+Label/fonts/font = ExtResource("1_ermc0")
+Label/styles/normal = null
+LineEdit/font_sizes/font_size = 30
+RichTextLabel/colors/default_color = Color(1, 1, 1, 1)
+RichTextLabel/colors/font_outline_color = Color(0, 0, 0, 1)
+RichTextLabel/colors/font_selected_color = Color(0, 0, 0, 0)
+RichTextLabel/colors/font_shadow_color = Color(0, 0, 0, 1)
+RichTextLabel/colors/selection_color = Color(0.1, 0.1, 1, 0.8)
+RichTextLabel/colors/table_border = Color(0, 0, 0, 0)
+RichTextLabel/colors/table_even_row_bg = Color(0, 0, 0, 0)
+RichTextLabel/colors/table_odd_row_bg = Color(0, 0, 0, 0)
+RichTextLabel/constants/line_separation = 0
+RichTextLabel/constants/outline_size = 0
+RichTextLabel/constants/shadow_offset_x = 2
+RichTextLabel/constants/shadow_offset_y = 2
+RichTextLabel/constants/shadow_outline_size = 1
+RichTextLabel/constants/table_h_separation = 3
+RichTextLabel/constants/table_v_separation = 3
+RichTextLabel/constants/text_highlight_h_padding = 3
+RichTextLabel/constants/text_highlight_v_padding = 3
+RichTextLabel/font_sizes/bold_font_size = 32
+RichTextLabel/font_sizes/bold_italics_font_size = 32
+RichTextLabel/font_sizes/italics_font_size = 32
+RichTextLabel/font_sizes/mono_font_size = 32
+RichTextLabel/font_sizes/normal_font_size = 32
+RichTextLabel/fonts/bold_font = SubResource("FontVariation_q14df")
+RichTextLabel/fonts/bold_italics_font = SubResource("FontVariation_foxf4")
+RichTextLabel/fonts/italics_font = SubResource("FontVariation_k6f1r")
+RichTextLabel/fonts/mono_font = ExtResource("1_ermc0")
+RichTextLabel/fonts/normal_font = ExtResource("1_ermc0")
+RichTextLabel/styles/focus = SubResource("StyleBoxFlat_bouvo")
+RichTextLabel/styles/normal = SubResource("StyleBoxEmpty_a04y2")
+TabBar/font_sizes/font_size = 30
+TextEdit/font_sizes/font_size = 30
+Tree/font_sizes/font_size = 30
+Tree/font_sizes/title_button_font_size = 30

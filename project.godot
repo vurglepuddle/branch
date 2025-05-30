@@ -36,6 +36,14 @@ window/handheld/orientation=1
 
 project/assembly_name="VETKA"
 
+[gui]
+
+theme/custom="res://fonts/main_theme.tres"
+theme/custom_font="res://fonts/vetka.ttf"
+theme/default_font_antialiasing=0
+theme/default_font_hinting=0
+theme/default_font_subpixel_positioning=0
+
 [input]
 
 ui_mute={

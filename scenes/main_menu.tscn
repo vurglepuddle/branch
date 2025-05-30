@@ -1,11 +1,12 @@
-[gd_scene load_steps=6 format=3 uid="uid://dlyj83s3srmk4"]
+[gd_scene load_steps=8 format=3 uid="uid://dlyj83s3srmk4"]
 
 [ext_resource type="Script" path="res://scripts/core/main_menu.gd" id="1_xlwsn"]
 [ext_resource type="PackedScene" uid="uid://dkod4g8u8j56n" path="res://scenes/WordPreviewRenderer.tscn" id="2_skuly"]
 [ext_resource type="Texture2D" uid="uid://ybhgdv6doer8" path="res://sprites/branches/grid2.png" id="3_8srqj"]
-[ext_resource type="Texture2D" uid="uid://dj43uq51l05a5" path="res://sprites/BG.png" id="5_807kq"]
-
-[sub_resource type="LabelSettings" id="LabelSettings_omlvj"]
+[ext_resource type="Texture2D" uid="uid://cymixqe6877j7" path="res://sprites/UI/button_default.png" id="3_hjx2r"]
+[ext_resource type="Texture2D" uid="uid://dbuyqnsrkb6sg" path="res://sprites/UI/button_press.png" id="4_cfbpr"]
+[ext_resource type="Theme" uid="uid://mecrr0hcgwnn" path="res://fonts/main_theme.tres" id="5_m1wwi"]
+[ext_resource type="Texture2D" uid="uid://cbtt7uucvtx6s" path="res://sprites/BG2.png" id="7_mg7qi"]
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -27,6 +28,103 @@ offset_top = 33.0
 offset_right = 525.0
 offset_bottom = 1130.0
 
+[node name="MenuItemsContainer" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+top_level = true
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -249.5
+offset_top = 521.0
+offset_right = 252.5
+offset_bottom = 602.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+
+[node name="HBox" type="HBoxContainer" parent="MenuItemsContainer"]
+layout_mode = 2
+
+[node name="StartButton" type="TextureButton" parent="MenuItemsContainer/HBox"]
+unique_name_in_owner = true
+layout_mode = 2
+texture_normal = ExtResource("3_hjx2r")
+texture_pressed = ExtResource("4_cfbpr")
+
+[node name="VBox" type="VBoxContainer" parent="MenuItemsContainer/HBox"]
+layout_mode = 2
+
+[node name="DifficultyButton" type="TextureButton" parent="MenuItemsContainer/HBox/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+texture_normal = ExtResource("3_hjx2r")
+texture_pressed = ExtResource("4_cfbpr")
+
+[node name="DifficultyLabel" type="RichTextLabel" parent="MenuItemsContainer/HBox"]
+unique_name_in_owner = true
+clip_contents = false
+layout_mode = 2
+theme = ExtResource("5_m1wwi")
+bbcode_enabled = true
+text = "[color=white]B[/color][color=#54fcfc]aby[/color]"
+scroll_active = false
+autowrap_mode = 0
+tab_size = 1
+
+[node name="Spacer_Start_Difficulty" type="Control" parent="MenuItemsContainer/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Spacer_Difficulty_RightControls" type="Control" parent="MenuItemsContainer/HBox"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SFX_HBox" type="HBoxContainer" parent="MenuItemsContainer/HBox"]
+unique_name_in_owner = true
+layout_mode = 2
+alignment = 1
+
+[node name="SFXIndicatorLabel" type="RichTextLabel" parent="MenuItemsContainer/HBox/SFX_HBox"]
+unique_name_in_owner = true
+visible = false
+clip_contents = false
+custom_minimum_size = Vector2(32, 0)
+layout_mode = 2
+bbcode_enabled = true
+text = "[color=white]O[/color][color=#54fcfc]n[/color]"
+scroll_active = false
+
+[node name="VBox2" type="VBoxContainer" parent="MenuItemsContainer/HBox/SFX_HBox"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="SFXButton" type="TextureButton" parent="MenuItemsContainer/HBox/SFX_HBox/VBox2"]
+unique_name_in_owner = true
+layout_mode = 2
+texture_normal = ExtResource("3_hjx2r")
+texture_pressed = ExtResource("4_cfbpr")
+
+[node name="VBox3" type="VBoxContainer" parent="MenuItemsContainer/HBox/SFX_HBox"]
+layout_mode = 2
+
+[node name="MusicButton" type="TextureButton" parent="MenuItemsContainer/HBox/SFX_HBox/VBox3"]
+unique_name_in_owner = true
+layout_mode = 2
+texture_normal = ExtResource("3_hjx2r")
+texture_pressed = ExtResource("4_cfbpr")
+
+[node name="MusicIndicatorLabel" type="RichTextLabel" parent="MenuItemsContainer/HBox/SFX_HBox"]
+unique_name_in_owner = true
+clip_contents = false
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+bbcode_enabled = true
+text = "[color=white]C[/color][color=#54fcfc]lassic[/color]"
+
 [node name="Grid2" type="Sprite2D" parent="."]
 position = Vector2(273, 611)
 texture = ExtResource("3_8srqj")
@@ -34,7 +132,7 @@ texture = ExtResource("3_8srqj")
 [node name="ColorRect" type="ColorRect" parent="."]
 layout_mode = 0
 offset_left = 18.0
-offset_top = 1119.0
+offset_top = 1122.0
 offset_right = 528.0
 offset_bottom = 1238.0
 color = Color(0, 0, 0.658824, 1)
@@ -48,91 +146,8 @@ offset_right = 528.0
 offset_bottom = 1137.0
 color = Color(0, 0, 0.658824, 1)
 
-[node name="MenuItemsContainer" type="VBoxContainer" parent="."]
-unique_name_in_owner = true
-top_level = true
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -205.5
-offset_top = 520.5
-offset_right = 211.5
-offset_bottom = 578.5
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_constants/separation = 20
-
-[node name="HBox" type="HBoxContainer" parent="MenuItemsContainer"]
-layout_mode = 2
-
-[node name="StartButton" type="Button" parent="MenuItemsContainer/HBox"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Start Game"
-
-[node name="VBox" type="VBoxContainer" parent="MenuItemsContainer/HBox"]
-layout_mode = 2
-
-[node name="DifficultyLabel" type="Label" parent="MenuItemsContainer/HBox/VBox"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Easy"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="DifficultyButton" type="Button" parent="MenuItemsContainer/HBox/VBox"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Difficulty"
-
-[node name="VSeparator" type="VSeparator" parent="MenuItemsContainer/HBox"]
-layout_mode = 2
-
-[node name="SFX_HBox" type="HBoxContainer" parent="MenuItemsContainer/HBox"]
-unique_name_in_owner = true
-layout_mode = 2
-alignment = 1
-
-[node name="VBox2" type="VBoxContainer" parent="MenuItemsContainer/HBox/SFX_HBox"]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="SFXButton" type="Button" parent="MenuItemsContainer/HBox/SFX_HBox/VBox2"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "SFX"
-
-[node name="SFXIndicatorLabel" type="Label" parent="MenuItemsContainer/HBox/SFX_HBox/VBox2"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "ON"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="VSeparator" type="VSeparator" parent="MenuItemsContainer/HBox/SFX_HBox"]
-layout_mode = 2
-
-[node name="VBox3" type="VBoxContainer" parent="MenuItemsContainer/HBox/SFX_HBox"]
-layout_mode = 2
-
-[node name="MusicButton" type="Button" parent="MenuItemsContainer/HBox/SFX_HBox/VBox3"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Music"
-
-[node name="MusicIndicatorLabel" type="Label" parent="MenuItemsContainer/HBox/SFX_HBox/VBox3"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Classic"
-label_settings = SubResource("LabelSettings_omlvj")
-horizontal_alignment = 1
-vertical_alignment = 1
-
 [node name="Bg" type="Sprite2D" parent="."]
 z_index = -100
-position = Vector2(274, 612)
+position = Vector2(290, 610)
 scale = Vector2(0.298354, 0.298354)
-texture = ExtResource("5_807kq")
+texture = ExtResource("7_mg7qi")
