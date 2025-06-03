@@ -1,4 +1,3 @@
-# SceneChanger.gd (for Godot 3.x)
 extends Node
 
 func change_scene_with_fade(scene_path: String, fade_out_duration: float = 0.3, fade_in_on_fail_duration: float = 0.3):
