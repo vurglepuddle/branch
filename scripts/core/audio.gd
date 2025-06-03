@@ -3,7 +3,7 @@ extends Node # audio.gd
 signal music_display_changed(display_name: String)
 
 @export var modern_beep_sound: AudioStream = preload("res://audio/modern/SFX_modern.wav")
-@export var beep_sound: AudioStream = preload("res://audio//other/beep_sound.wav")
+@export var beep_sound: AudioStream = preload("res://audio/other/beep_sound.wav")
 @export var switch_to_off_sfx: AudioStream
 @export var star_appearance_sound: AudioStream = preload("res://audio/Star.wav")
 

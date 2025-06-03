@@ -20,7 +20,7 @@ func _ready():
 	if not branch_preview_scene:
 		printerr("WordPreviewRenderer: 'Branch Preview Scene' export not assigned!")
 		return
-	if not DifficultyLayouts is Node:
+	if not (DifficultyLayouts is Node):
 		printerr("WordPreviewRenderer: Autoload 'DifficultyLayouts' not valid.")
 		return
 	
