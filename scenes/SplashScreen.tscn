@@ -14,6 +14,6 @@ star_scene = ExtResource("2_hxmgo")
 
 [node name="Bg" type="Sprite2D" parent="."]
 z_index = -100
-position = Vector2(274, 612)
-scale = Vector2(0.298354, 0.298354)
+position = Vector2(276, 611)
+scale = Vector2(0.895062, 0.893359)
 texture = ExtResource("2_htqm8")
