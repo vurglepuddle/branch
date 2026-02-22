@@ -28,8 +28,14 @@ Tap a tile to rotate it. That's pretty much it.
 
 ## Screenshots
 
-<img width="208" height="465" alt="Godot_v4 3-stable_win64_4LRoss9Lj1" src="https://github.com/user-attachments/assets/4309e013-0b1c-426d-981e-c14f9c2a3ecd" />
-
+<table>
+  <tr>
+    <td><img width="200" src="https://github.com/user-attachments/assets/8f7e28fc-5247-405b-837e-678e935f25d2" /></td>
+    <td><img width="200" src="https://github.com/user-attachments/assets/c136fefd-cf15-4257-b6c9-78a98a50abca" /></td>
+    <td><img width="200" src="https://github.com/user-attachments/assets/4309e013-0b1c-426d-981e-c14f9c2a3ecd" /></td>
+    <td><img width="200" src="https://github.com/user-attachments/assets/12471b70-6114-4e8d-b24d-e377e465f4c7" /></td>
+  </tr>
+</table>
 
 ---
 
