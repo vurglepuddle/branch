@@ -347,7 +347,7 @@ func cycle_rotation():
 	rotation_index = (rotation_index + 1) % 4
 	connections = rotate_connections(connections)
 	update_texture()
-	print("Rotated connections: ", connections)
+	#print("Rotated connections: ", connections)
 
 func rotate_connections(current_connections: Array) -> Array:
 	# Rotate connections clockwise
