@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="VETKA"
-run/main_scene="res://scenes/SplashScreen.tscn"
+run/main_scene="res://scenes/PreClock.tscn"
 config/features=PackedStringArray("4.3", "Mobile")
 boot_splash/bg_color=Color(0.0470588, 0.0235294, 0.0666667, 1)
 boot_splash/show_image=false

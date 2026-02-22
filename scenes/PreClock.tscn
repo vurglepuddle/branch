@@ -1,0 +1,42 @@
+[gd_scene load_steps=6 format=3 uid="uid://cgf70gppm7qjs"]
+
+[ext_resource type="Texture2D" uid="uid://dm8n6uex1dieb" path="res://sprites/animation/clock.png" id="1_b45n5"]
+[ext_resource type="Script" path="res://scripts/core/PreClock.gd" id="1_gfyhr"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_o78wi"]
+atlas = ExtResource("1_b45n5")
+region = Rect2(0, 0, 135, 285)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_o741r"]
+atlas = ExtResource("1_b45n5")
+region = Rect2(135, 0, 135, 285)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_udqbh"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_o78wi")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_o741r")
+}],
+"loop": true,
+"name": &"clock",
+"speed": 4.0
+}]
+
+[node name="PreClock" type="Node2D"]
+script = ExtResource("1_gfyhr")
+
+[node name="Clock" type="AnimatedSprite2D" parent="."]
+position = Vector2(266, 588)
+sprite_frames = SubResource("SpriteFrames_udqbh")
+animation = &"clock"
+
+[node name="ColorRect" type="ColorRect" parent="."]
+z_index = -999
+offset_left = -90.0
+offset_top = -94.0
+offset_right = 598.0
+offset_bottom = 1285.0
+color = Color(0, 0, 0, 1)

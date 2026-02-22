@@ -360,7 +360,7 @@ func _on_branch_clicked(x: int, y: int):
 		return
 	# Play the beep sound
 	if AudioManager:
-		AudioManager.sfx_player.play()
+		AudioManager.play_beep_pitched(y, grid_height)
 
 	var clicked_branch = branches[x][y]
 
