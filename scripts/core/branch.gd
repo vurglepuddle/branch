@@ -128,6 +128,7 @@ func play_terminal_blossom():
 # Default connections for rotation 0
 var connections = [1, 1, 0, 0]
 var rotation_index = 0
+var solution_rotation_index: int = 0
 
 # Branch state and connection to source
 var state: String = "dead"  # Default state
@@ -346,6 +347,13 @@ func get_connections() -> Array:
 func cycle_rotation():
 	rotation_index = (rotation_index + 1) % 4
 	connections = rotate_connections(connections)
+	update_texture()
+
+func solve_rotation() -> void:
+	var steps: int = (solution_rotation_index - rotation_index + 4) % 4
+	for _i in range(steps):
+		rotation_index = (rotation_index + 1) % 4
+		connections = rotate_connections(connections)
 	update_texture()
 	#print("Rotated connections: ", connections)
 

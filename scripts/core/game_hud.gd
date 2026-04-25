@@ -1,5 +1,7 @@
 extends CanvasLayer
 
+signal give_up_requested
+
 # Panel slides with anchor_top=1 / anchor_bottom=1, so offsets are relative to parent bottom.
 # Closed: only handle tab (28px) visible above screen edge.
 # Open:   full 144px panel visible.
@@ -18,6 +20,7 @@ const BBCODE_FIRST: String = "white"
 const BBCODE_REST: String  = "#54fcfc"
 
 var panel_is_open: bool  = false  # read by grid.gd to block branch taps
+var locked: bool         = false  # set by grid.gd during solve animation
 var _panel_open: bool:
 	get: return panel_is_open
 	set(v): panel_is_open = v
@@ -85,8 +88,11 @@ func _toggle_panel() -> void:
 	else:
 		_show_panel()
 
+func hide_panel() -> void:
+	_hide_panel()
+
 func _input(event: InputEvent) -> void:
-	if _animating or (_settings_overlay != null and _settings_overlay.visible):
+	if locked or _animating or (_settings_overlay != null and _settings_overlay.visible):
 		return
 
 	var vp_h: float = get_viewport().get_visible_rect().size.y
@@ -120,9 +126,7 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 
 func _on_give_up_pressed() -> void:
-	_hide_panel()
-	# Give up animation will be triggered here when ready.
-	SceneChanger.change_scene_with_fade("res://scenes/main_menu.tscn", 0.3)
+	give_up_requested.emit()
 
 func _on_settings_button_pressed() -> void:
 	if AudioManager:

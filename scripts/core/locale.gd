@@ -21,6 +21,7 @@ const STRINGS: Dictionary = {
 		"torrero": "Torrero",
 		"give_up": "Give Up",
 		"start": "Start",
+		"solve_anim": "Solve Anim",
 	},
 	"ru": {
 		"settings": "Настройки",
@@ -29,7 +30,7 @@ const STRINGS: Dictionary = {
 		"graphics": "Графика",
 		"language": "Язык",
 		"classic": "Классика",
-		"modern": "Современная",
+		"modern": "Модерн",
 		"off": "Выкл",
 		"on": "Вкл",
 		"graphics_old_label": "Классика",
@@ -42,6 +43,7 @@ const STRINGS: Dictionary = {
 		"torrero": "ТОРеро",
 		"give_up": "Сдаться",
 		"start": "Старт",
+		"solve_anim": "Анимация",
 	},
 }
 

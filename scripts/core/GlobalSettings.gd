@@ -7,6 +7,7 @@ var music_style: String = "classic"   # "classic" | "modern" | "off"
 var sfx_enabled: bool = true
 var graphics_old: bool = false
 var language: String = "en"           # "en" | "ru"
+var give_up_animation: bool = true
 
 const SETTINGS_PATH := "user://settings.cfg"
 
@@ -20,6 +21,7 @@ func save_settings() -> void:
 	cfg.set_value("audio", "sfx_enabled", sfx_enabled)
 	cfg.set_value("graphics", "old", graphics_old)
 	cfg.set_value("ui", "language", language)
+	cfg.set_value("ui", "give_up_animation", give_up_animation)
 	cfg.save(SETTINGS_PATH)
 
 func load_settings() -> void:
@@ -32,3 +34,4 @@ func load_settings() -> void:
 	sfx_enabled = cfg.get_value("audio", "sfx_enabled", true)
 	graphics_old = cfg.get_value("graphics", "old", false)
 	language = cfg.get_value("ui", "language", "en")
+	give_up_animation = cfg.get_value("ui", "give_up_animation", true)
