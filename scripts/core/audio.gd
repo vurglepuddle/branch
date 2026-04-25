@@ -191,25 +191,22 @@ func play_star_sound():
 func play_sfx(sfx_name: String = "beep_sound", volume_db: float = DEFAULT_SFX_VOLUME_DB):
 	play_named_sfx(sfx_name, volume_db)
 
-# Plays the beep with pitch based on tile row — classic mode only.
+# Plays the beep with pitch based on tile row — all modes.
 # y=0 is top (low pitch), y=grid_height-1 is bottom (high pitch), ~1 semitone per row.
-# Modern and Off modes play a flat beep as usual.
 func play_beep_pitched(y: int, _grid_height: int):
 	if not sfx_enabled or not is_instance_valid(sfx_player):
 		return
 
+	var semitones := float(y) + randf_range(-0.4, 0.4)
+	sfx_player.pitch_scale = pow(2.0, semitones / 12.0)
+
 	var stream_to_play: AudioStream
 	if is_menu_music_off:
 		stream_to_play = switch_to_off_sfx
-		sfx_player.pitch_scale = 1.0
 	elif current_music_style == MusicStyle.CLASSIC:
 		stream_to_play = beep_sound
-		# Each row = 1 semitone, plus a tiny random shimmer per tap
-		var semitones = float(y) + randf_range(-0.4, 0.4)
-		sfx_player.pitch_scale = pow(2.0, semitones / 12.0)
 	else:
 		stream_to_play = modern_beep_sound
-		sfx_player.pitch_scale = 1.0
 
 	if stream_to_play:
 		sfx_player.stream = stream_to_play

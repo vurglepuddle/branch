@@ -1,6 +1,6 @@
 extends Control # res://scenes/main_menu.gd
 
-@onready var difficulty_label: RichTextLabel = %MenuItemsContainer/HBox/DifficultyLabel
+@onready var difficulty_label: RichTextLabel = %DifficultyLabel
 @onready var start_button: TextureButton = %MenuItemsContainer/HBox/StartButton
 @onready var start_label: RichTextLabel = %MenuItemsContainer/HBox/StartLabel
 @onready var settings_label: RichTextLabel = %MenuItemsContainer/HBox/SFX_HBox/SettingsLabel
@@ -131,6 +131,6 @@ func _on_start_button_pressed():
 
 func update_difficulty_display():
 	var key: String = difficulty_levels[current_difficulty_index]
-	difficulty_label.bbcode_text = _format_label_text(Locale.t(key))
+	difficulty_label.bbcode_text = "[center][color=#54fcfc]" + Locale.t(key) + "[/color][/center]"
 	start_label.bbcode_text     = _format_label_text(Locale.t("start"))
 	settings_label.bbcode_text  = _format_label_text(Locale.t("settings"))

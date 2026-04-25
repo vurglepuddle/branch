@@ -35,9 +35,9 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -215.5
-offset_top = -218.0
+offset_top = -204.0
 offset_right = 212.5
-offset_bottom = 374.0
+offset_bottom = 356.0
 grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.988235, 0.988235, 0.705882, 0)
@@ -49,9 +49,9 @@ anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 15.0
-offset_top = 3.0
+offset_top = 4.0
 offset_right = 13.0
-offset_bottom = -5.0
+offset_bottom = -13.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/margin_left = 24
@@ -323,7 +323,7 @@ scroll_active = false
 autowrap_mode = 0
 
 [node name="GapRight3" type="Control" parent="Panel/MarginContainer/VBox"]
-custom_minimum_size = Vector2(0, 12)
+custom_minimum_size = Vector2(0, 16)
 layout_mode = 2
 
 [node name="Row_Close" type="HBoxContainer" parent="Panel/MarginContainer/VBox"]
