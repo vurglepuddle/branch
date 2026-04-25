@@ -38,9 +38,9 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -249.5
-offset_top = 521.0
+offset_top = 512.0
 offset_right = 252.5
-offset_bottom = 602.0
+offset_bottom = 608.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 20
@@ -68,6 +68,7 @@ unique_name_in_owner = true
 clip_contents = false
 layout_mode = 2
 theme = ExtResource("5_m1wwi")
+theme_override_font_sizes/normal_font_size = 38
 bbcode_enabled = true
 text = "[color=white]S[/color][color=#54fcfc]tart[/color]"
 fit_content = true
@@ -77,17 +78,6 @@ autowrap_mode = 0
 [node name="LeftExpander" type="Control" parent="MenuItemsContainer/HBox"]
 layout_mode = 2
 size_flags_horizontal = 3
-
-[node name="DifficultyLabel" type="RichTextLabel" parent="MenuItemsContainer/HBox"]
-unique_name_in_owner = true
-clip_contents = false
-layout_mode = 2
-theme = ExtResource("5_m1wwi")
-bbcode_enabled = true
-text = "[color=white]B[/color][color=#54fcfc]aby[/color]"
-scroll_active = false
-autowrap_mode = 0
-tab_size = 1
 
 [node name="RightExpander" type="Control" parent="MenuItemsContainer/HBox"]
 layout_mode = 2
@@ -103,6 +93,7 @@ unique_name_in_owner = true
 clip_contents = false
 layout_mode = 2
 theme = ExtResource("5_m1wwi")
+theme_override_font_sizes/normal_font_size = 38
 bbcode_enabled = true
 text = "[color=white]S[/color][color=#54fcfc]ettings[/color]"
 fit_content = true
@@ -123,6 +114,27 @@ texture_pressed = ExtResource("4_cfbpr")
 [node name="MarginRight" type="Control" parent="MenuItemsContainer/HBox/SFX_HBox"]
 custom_minimum_size = Vector2(16, 0)
 layout_mode = 2
+
+[node name="DifficultyLabel" type="RichTextLabel" parent="."]
+unique_name_in_owner = true
+z_index = 102
+clip_contents = false
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 18.0
+offset_top = 1170.0
+offset_right = -17.0
+offset_bottom = 1219.0
+grow_horizontal = 2
+theme = ExtResource("5_m1wwi")
+theme_override_font_sizes/normal_font_size = 46
+bbcode_enabled = true
+text = "[center][color=#54fcfc]Baby[/color][/center]"
+scroll_active = false
+autowrap_mode = 0
+tab_size = 1
 
 [node name="Grid2" type="Sprite2D" parent="."]
 position = Vector2(273, 611)

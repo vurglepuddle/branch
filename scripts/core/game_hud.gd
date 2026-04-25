@@ -104,12 +104,17 @@ func _input(event: InputEvent) -> void:
 			if not _panel_open and event.position.y >= vp_h - SWIPE_ZONE:
 				get_viewport().set_input_as_handled()
 		else:
-			# Tap-to-toggle: release in handle zone with minimal movement.
 			if _drag_start.x >= 0.0:
 				var moved: float = event.position.distance_to(_drag_start)
-				if moved < 20.0 and _drag_start.y >= vp_h - SWIPE_ZONE and not _panel_open:
-					_toggle_panel()
-					get_viewport().set_input_as_handled()
+				if moved < 20.0:
+					if not _panel_open and _drag_start.y >= vp_h - SWIPE_ZONE:
+						# Tap handle tab → open panel
+						_toggle_panel()
+						get_viewport().set_input_as_handled()
+					elif _panel_open and event.position.y < vp_h - PANEL_HEIGHT:
+						# Tap on game board while panel open → close panel
+						# No set_input_as_handled: branch press was already blocked, this just closes
+						_hide_panel()
 			_drag_start = Vector2(-1.0, -1.0)
 
 	elif event is InputEventScreenDrag or (event is InputEventMouseMotion and (event as InputEventMouseMotion).button_mask > 0):

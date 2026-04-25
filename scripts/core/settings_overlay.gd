@@ -104,6 +104,14 @@ func _on_solve_anim_toggle() -> void:
 	GlobalSettings.save_settings()
 	solve_anim_value_label.bbcode_text = _fmt(_solve_anim_value_text())
 
+func _input(event: InputEvent) -> void:
+	if not visible:
+		return
+	if event is InputEventMouseButton or event is InputEventScreenTouch:
+		if event.pressed and not $Panel.get_global_rect().has_point(event.position):
+			close()
+			get_viewport().set_input_as_handled()
+
 func _on_close_label_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		close()
