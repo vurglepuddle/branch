@@ -1,8 +1,8 @@
 extends Control # res://scenes/main_menu.gd
 
 @onready var difficulty_label: RichTextLabel = %MenuItemsContainer/HBox/DifficultyLabel
-@onready var difficulty_button: TextureButton = %MenuItemsContainer/HBox/VBox/DifficultyButton
 @onready var start_button: TextureButton = %MenuItemsContainer/HBox/StartButton
+@onready var start_label: RichTextLabel = %MenuItemsContainer/HBox/StartLabel
 @onready var settings_label: RichTextLabel = %MenuItemsContainer/HBox/SFX_HBox/SettingsLabel
 @onready var settings_button: TextureButton = %MenuItemsContainer/HBox/SFX_HBox/SettingsButton
 
@@ -14,8 +14,9 @@ var current_difficulty_index: int
 
 const BBCODE_FIRST_LETTER_COLOR: String = "white"
 const BBCODE_REST_LETTERS_COLOR: String = "#54fcfc"
-const BBCODE_OFF_COLOR: String = "#54fcfc"
+const SWIPE_THRESHOLD: float = 60.0
 
+var _drag_start: Vector2 = Vector2(-1.0, -1.0)
 var _settings_overlay: Control
 
 func _format_label_text(base_text: String) -> String:
@@ -26,7 +27,6 @@ func _format_label_text(base_text: String) -> String:
 	return "[color=%s]%s[/color][color=%s]%s[/color]" % [BBCODE_FIRST_LETTER_COLOR, first_char, BBCODE_REST_LETTERS_COLOR, rest_chars]
 
 func _ready():
-	difficulty_button.pressed.connect(_on_difficulty_button_pressed)
 	start_button.pressed.connect(_on_start_button_pressed)
 	settings_button.pressed.connect(_on_settings_button_pressed)
 	print("MainMenu: _ready() - Signals connected.")
@@ -63,21 +63,33 @@ func _initialize_post_audio_manager_ready():
 	else:
 		printerr("MainMenu: _initialize_post_audio_manager_ready - FadeOverlay NOT FOUND.")
 
-func _on_settings_button_pressed():
-	if AudioManager: AudioManager.play_named_sfx("beep_sound")
-	_settings_overlay.open()
+func _input(event: InputEvent) -> void:
+	if _settings_overlay != null and _settings_overlay.visible:
+		return
 
-func _on_difficulty_button_pressed():
-	current_difficulty_index = (current_difficulty_index + 1) % difficulty_levels.size()
+	if event is InputEventScreenTouch or event is InputEventMouseButton:
+		if event.pressed:
+			_drag_start = event.position
+		else:
+			_drag_start = Vector2(-1.0, -1.0)
+	elif event is InputEventScreenDrag or (event is InputEventMouseMotion and (event as InputEventMouseMotion).button_mask > 0):
+		if _drag_start.x < 0.0:
+			return
+		var dx: float = event.position.x - _drag_start.x
+		if abs(dx) > SWIPE_THRESHOLD:
+			_cycle_difficulty(1 if dx > 0 else -1)
+			_drag_start = Vector2(-1.0, -1.0)
+			get_viewport().set_input_as_handled()
+
+func _cycle_difficulty(direction: int) -> void:
+	current_difficulty_index = (current_difficulty_index + direction + difficulty_levels.size()) % difficulty_levels.size()
 	update_difficulty_display()
-
 	if GlobalSettings:
 		GlobalSettings.current_difficulty = difficulty_levels[current_difficulty_index]
 		GlobalSettings.last_menu_difficulty_index = current_difficulty_index
 		GlobalSettings.save_settings()
-
-	if AudioManager: AudioManager.play_named_sfx("beep_sound")
-
+	if AudioManager:
+		AudioManager.play_named_sfx("beep_sound")
 	_update_difficulty_preview()
 
 func _update_difficulty_preview():
@@ -108,6 +120,10 @@ func _update_difficulty_preview():
 		difficulty_preview_display.texture = null
 		difficulty_preview_display.custom_minimum_size = Vector2.ZERO
 
+func _on_settings_button_pressed():
+	if AudioManager: AudioManager.play_named_sfx("beep_sound")
+	_settings_overlay.open()
+
 func _on_start_button_pressed():
 	if AudioManager: AudioManager.play_named_sfx("beep_sound")
 	print("MainMenu: Starting game with difficulty: " + difficulty_levels[current_difficulty_index])
@@ -116,4 +132,5 @@ func _on_start_button_pressed():
 func update_difficulty_display():
 	var key: String = difficulty_levels[current_difficulty_index]
 	difficulty_label.bbcode_text = _format_label_text(Locale.t(key))
-	settings_label.bbcode_text = _format_label_text(Locale.t("settings"))
+	start_label.bbcode_text     = _format_label_text(Locale.t("start"))
+	settings_label.bbcode_text  = _format_label_text(Locale.t("settings"))

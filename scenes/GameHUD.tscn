@@ -63,10 +63,11 @@ mouse_filter = 2
 color = Color(0.4, 0.7, 1, 0.5)
 
 [node name="ButtonArea" type="HBoxContainer" parent="HUDRoot/Panel"]
+modulate = Color(1, 1, 1, 0)
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_top = 36.0
+offset_top = 12.0
 offset_bottom = 102.0
 grow_horizontal = 2
 theme_override_constants/separation = 0

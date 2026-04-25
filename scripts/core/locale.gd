@@ -20,6 +20,7 @@ const STRINGS: Dictionary = {
 		"expert": "Expert",
 		"torrero": "Torrero",
 		"give_up": "Give Up",
+		"start": "Start",
 	},
 	"ru": {
 		"settings": "Настройки",
@@ -40,6 +41,7 @@ const STRINGS: Dictionary = {
 		"expert": "эксперт",
 		"torrero": "ТОРеро",
 		"give_up": "Сдаться",
+		"start": "Старт",
 	},
 }
 
