@@ -52,8 +52,8 @@ text = "Music test"
 
 [node name="Bg_other" type="Sprite2D" parent="."]
 z_index = -100
-position = Vector2(255, 575)
-scale = Vector2(0.298354, 0.298354)
+position = Vector2(255.421, 575.889)
+scale = Vector2(0.298787, 0.298787)
 texture = ExtResource("5_iap2h")
 
 [connection signal="pressed" from="TestMusicButton" to="." method="_on_test_music_button_pressed"]

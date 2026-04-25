@@ -52,6 +52,7 @@ func _ready():
 	randomize()
 	_game_hud = preload("res://scenes/GameHUD.tscn").instantiate()
 	add_child(_game_hud)
+	_game_hud.give_up_requested.connect(_on_give_up_requested)
 	if GlobalSettings: # Check if the Autoload script exists
 		current_difficulty_str = GlobalSettings.current_difficulty
 		print("Grid: Loaded difficulty from GlobalSettings: " + current_difficulty_str)
@@ -359,8 +360,7 @@ func init_branches(g_width: int, g_height: int, b_scene: PackedScene,
 
 
 func _on_branch_clicked(x: int, y: int):
-	if all_connected or is_level_complete_animation_playing:
-		print("Input disabled, level already complete.")
+	if all_connected or is_level_complete_animation_playing or level_won_waiting_for_exit_input:
 		return
 	if is_instance_valid(_game_hud) and _game_hud.panel_is_open:
 		return
@@ -593,6 +593,75 @@ func _spawn_single_leaf(branch: BranchNode, timer_node: Timer):
 	if is_instance_valid(timer_node):
 		timer_node.queue_free()
 
+
+func _on_give_up_requested() -> void:
+	if not GlobalSettings.give_up_animation:
+		_return_to_main_menu()
+		return
+	_game_hud.hide_panel()
+	_game_hud.locked = true
+	is_level_complete_animation_playing = true
+	level_won_waiting_for_exit_input = false
+	await get_tree().create_timer(0.28).timeout  # wait for panel to slide down
+	_run_solve_animation()
+
+func _get_solve_order() -> Array:
+	var result: Array = []
+	var visited: Dictionary = {}
+	var queue: Array = []
+	var src := Vector2i(-1, -1)
+	for x in range(grid_width):
+		for y in range(grid_height):
+			if branches[x][y] == source_tile:
+				src = Vector2i(x, y)
+				break
+		if src.x >= 0:
+			break
+	if src.x < 0:
+		return result
+	queue.append(src)
+	visited[src] = true
+	while not queue.is_empty():
+		var pos: Vector2i = queue.pop_front()
+		if branches[pos.x][pos.y].branch_type != BranchType.EMPTY:
+			result.append(pos)
+		for dir in [Vector2i(0,-1), Vector2i(1,0), Vector2i(0,1), Vector2i(-1,0)]:
+			var nx: int = pos.x + dir.x
+			var ny: int = pos.y + dir.y
+			if is_toroidal_grid:
+				nx = ((nx % grid_width) + grid_width) % grid_width
+				ny = ((ny % grid_height) + grid_height) % grid_height
+			elif nx < 0 or nx >= grid_width or ny < 0 or ny >= grid_height:
+				continue
+			var next := Vector2i(nx, ny)
+			if not visited.has(next) and branches[nx][ny].branch_type != BranchType.EMPTY:
+				visited[next] = true
+				queue.append(next)
+	return result
+
+func _propagate_after_solve() -> void:
+	for row in branches:
+		for b in row:
+			b.connected_to_source = false
+	source_tile.connected_to_source = true
+	source_tile.propagate_connection(grid_width, grid_height, branches, is_toroidal_grid)
+	for row in branches:
+		for b in row:
+			if b.branch_type != BranchType.EMPTY and b.state == "alive" and not b.connected_to_source:
+				b.set_state("dead")
+
+func _run_solve_animation() -> void:
+	for pos in _get_solve_order():
+		await get_tree().create_timer(0.07).timeout
+		branches[pos.x][pos.y].solve_rotation()
+		_propagate_after_solve()
+		if AudioManager:
+			AudioManager.play_beep_pitched(pos.y, grid_height)
+	is_level_complete_animation_playing = false
+	level_won_waiting_for_exit_input = true
+	await get_tree().create_timer(3.0).timeout
+	if level_won_waiting_for_exit_input:
+		_return_to_main_menu()
 
 func _return_to_main_menu():
 	level_won_waiting_for_exit_input = false # Reset the flag

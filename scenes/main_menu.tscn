@@ -50,8 +50,8 @@ layout_mode = 2
 theme_override_constants/separation = 0
 
 [node name="MarginLeft" type="Control" parent="MenuItemsContainer/HBox"]
-layout_mode = 2
 custom_minimum_size = Vector2(16, 0)
+layout_mode = 2
 
 [node name="StartButton" type="TextureButton" parent="MenuItemsContainer/HBox"]
 unique_name_in_owner = true
@@ -60,8 +60,8 @@ texture_normal = ExtResource("3_hjx2r")
 texture_pressed = ExtResource("4_cfbpr")
 
 [node name="GapStartLabel" type="Control" parent="MenuItemsContainer/HBox"]
-layout_mode = 2
 custom_minimum_size = Vector2(5, 0)
+layout_mode = 2
 
 [node name="StartLabel" type="RichTextLabel" parent="MenuItemsContainer/HBox"]
 unique_name_in_owner = true
@@ -111,8 +111,8 @@ autowrap_mode = 0
 text_direction = 2
 
 [node name="GapRight" type="Control" parent="MenuItemsContainer/HBox/SFX_HBox"]
-layout_mode = 2
 custom_minimum_size = Vector2(5, 0)
+layout_mode = 2
 
 [node name="SettingsButton" type="TextureButton" parent="MenuItemsContainer/HBox/SFX_HBox"]
 unique_name_in_owner = true
@@ -121,8 +121,8 @@ texture_normal = ExtResource("3_hjx2r")
 texture_pressed = ExtResource("4_cfbpr")
 
 [node name="MarginRight" type="Control" parent="MenuItemsContainer/HBox/SFX_HBox"]
-layout_mode = 2
 custom_minimum_size = Vector2(16, 0)
+layout_mode = 2
 
 [node name="Grid2" type="Sprite2D" parent="."]
 position = Vector2(273, 611)

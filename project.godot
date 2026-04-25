@@ -20,11 +20,11 @@ config/icon="res://icons/app icon.png"
 [autoload]
 
 GlobalSettings="*res://scripts/core/GlobalSettings.gd"
-Locale="*res://scripts/core/locale.gd"
 FadeOverlay="*res://scenes/FadeOverlay.tscn"
 SceneChanger="*res://scripts/core/SceneChanger.gd"
 AudioManager="*res://scenes/AudioManager.tscn"
 DifficultyLayouts="*res://scripts/core/difficulty_layouts.gd"
+Locale="*res://scripts/core/locale.gd"
 
 [display]
 

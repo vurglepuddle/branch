@@ -461,6 +461,15 @@ func generate_solvable_puzzle(grid_width: int, grid_height: int, branch_scene: P
 
 				if branch_instance.branch_type != BranchType.EMPTY:
 					branch_instance.connections = normalize_connections(final_solved_conn, final_conn_count)
+					# Find how many rotations from canonical reach the actual puzzle-correct orientation
+					var sol_rot: int = 0
+					var test_conn: Array = branch_instance.connections.duplicate()
+					for r in range(4):
+						if test_conn == final_solved_conn:
+							sol_rot = r
+							break
+						test_conn = branch_instance.rotate_connections(test_conn)
+					branch_instance.solution_rotation_index = sol_rot
 					var random_rotations = randi() % 4
 					for _i in range(random_rotations):
 						branch_instance.connections = branch_instance.rotate_connections(branch_instance.connections)
