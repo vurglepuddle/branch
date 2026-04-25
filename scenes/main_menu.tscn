@@ -59,22 +59,24 @@ layout_mode = 2
 texture_normal = ExtResource("3_hjx2r")
 texture_pressed = ExtResource("4_cfbpr")
 
-[node name="GapStartDifficulty" type="Control" parent="MenuItemsContainer/HBox"]
-layout_mode = 2
-custom_minimum_size = Vector2(10, 0)
-
-[node name="VBox" type="VBoxContainer" parent="MenuItemsContainer/HBox"]
-layout_mode = 2
-
-[node name="DifficultyButton" type="TextureButton" parent="MenuItemsContainer/HBox/VBox"]
-unique_name_in_owner = true
-layout_mode = 2
-texture_normal = ExtResource("3_hjx2r")
-texture_pressed = ExtResource("4_cfbpr")
-
-[node name="GapDifficultyLabel" type="Control" parent="MenuItemsContainer/HBox"]
+[node name="GapStartLabel" type="Control" parent="MenuItemsContainer/HBox"]
 layout_mode = 2
 custom_minimum_size = Vector2(5, 0)
+
+[node name="StartLabel" type="RichTextLabel" parent="MenuItemsContainer/HBox"]
+unique_name_in_owner = true
+clip_contents = false
+layout_mode = 2
+theme = ExtResource("5_m1wwi")
+bbcode_enabled = true
+text = "[color=white]S[/color][color=#54fcfc]tart[/color]"
+fit_content = true
+scroll_active = false
+autowrap_mode = 0
+
+[node name="LeftExpander" type="Control" parent="MenuItemsContainer/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
 
 [node name="DifficultyLabel" type="RichTextLabel" parent="MenuItemsContainer/HBox"]
 unique_name_in_owner = true
@@ -87,7 +89,7 @@ scroll_active = false
 autowrap_mode = 0
 tab_size = 1
 
-[node name="Spacer_Start_Difficulty" type="Control" parent="MenuItemsContainer/HBox"]
+[node name="RightExpander" type="Control" parent="MenuItemsContainer/HBox"]
 layout_mode = 2
 size_flags_horizontal = 3
 

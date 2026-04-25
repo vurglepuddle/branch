@@ -25,7 +25,8 @@ var _animating: bool     = false
 var _drag_start: Vector2 = Vector2(-1.0, -1.0)
 var _settings_overlay: Control
 
-@onready var _panel: Control            = $HUDRoot/Panel
+@onready var _panel: Control             = $HUDRoot/Panel
+@onready var _button_area: HBoxContainer = $HUDRoot/Panel/ButtonArea
 @onready var _give_up_button: TextureButton  = %GiveUpButton
 @onready var _give_up_label: RichTextLabel   = %GiveUpLabel
 @onready var _settings_button: TextureButton = %SettingsButton
@@ -60,9 +61,11 @@ func _show_panel() -> void:
 	_panel_open = true
 	_animating  = true
 	_refresh_labels()
+	_button_area.modulate.a = 0.0
 	var tween := create_tween().set_parallel(true).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	tween.tween_property(_panel, "offset_top",    PANEL_OPEN_OFFSET_TOP,    0.28)
 	tween.tween_property(_panel, "offset_bottom", PANEL_OPEN_OFFSET_BOTTOM, 0.28)
+	tween.tween_property(_button_area, "modulate:a", 1.0, 0.08)
 	tween.chain().tween_callback(func(): _animating = false)
 
 func _hide_panel() -> void:
@@ -73,6 +76,7 @@ func _hide_panel() -> void:
 	var tween := create_tween().set_parallel(true).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 	tween.tween_property(_panel, "offset_top",    PANEL_CLOSED_OFFSET_TOP,    0.22)
 	tween.tween_property(_panel, "offset_bottom", PANEL_CLOSED_OFFSET_BOTTOM, 0.22)
+	tween.tween_property(_button_area, "modulate:a", 0.0, 0.06)
 	tween.chain().tween_callback(func(): _animating = false)
 
 func _toggle_panel() -> void:
