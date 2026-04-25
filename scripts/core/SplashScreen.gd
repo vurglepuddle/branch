@@ -26,6 +26,9 @@ func _ready():
 
 	var viewport_rect = get_viewport_rect()
 	spawn_area = Rect2(0, 0, viewport_rect.size.x, viewport_rect.size.y / 8.0)
+
+	if GlobalSettings.graphics_old:
+		$Bg.texture = load("res://sprites/BG_old.png")
 	
 	randomize()
 

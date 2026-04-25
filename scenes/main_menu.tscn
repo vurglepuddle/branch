@@ -47,12 +47,21 @@ theme_override_constants/separation = 20
 
 [node name="HBox" type="HBoxContainer" parent="MenuItemsContainer"]
 layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="MarginLeft" type="Control" parent="MenuItemsContainer/HBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(16, 0)
 
 [node name="StartButton" type="TextureButton" parent="MenuItemsContainer/HBox"]
 unique_name_in_owner = true
 layout_mode = 2
 texture_normal = ExtResource("3_hjx2r")
 texture_pressed = ExtResource("4_cfbpr")
+
+[node name="GapStartDifficulty" type="Control" parent="MenuItemsContainer/HBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(10, 0)
 
 [node name="VBox" type="VBoxContainer" parent="MenuItemsContainer/HBox"]
 layout_mode = 2
@@ -62,6 +71,10 @@ unique_name_in_owner = true
 layout_mode = 2
 texture_normal = ExtResource("3_hjx2r")
 texture_pressed = ExtResource("4_cfbpr")
+
+[node name="GapDifficultyLabel" type="Control" parent="MenuItemsContainer/HBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(5, 0)
 
 [node name="DifficultyLabel" type="RichTextLabel" parent="MenuItemsContainer/HBox"]
 unique_name_in_owner = true
@@ -78,52 +91,36 @@ tab_size = 1
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="Spacer_Difficulty_RightControls" type="Control" parent="MenuItemsContainer/HBox"]
-visible = false
-layout_mode = 2
-size_flags_horizontal = 3
-
 [node name="SFX_HBox" type="HBoxContainer" parent="MenuItemsContainer/HBox"]
 unique_name_in_owner = true
 layout_mode = 2
-alignment = 1
+theme_override_constants/separation = 0
 
-[node name="SFXIndicatorLabel" type="RichTextLabel" parent="MenuItemsContainer/HBox/SFX_HBox"]
+[node name="SettingsLabel" type="RichTextLabel" parent="MenuItemsContainer/HBox/SFX_HBox"]
 unique_name_in_owner = true
-visible = false
 clip_contents = false
-custom_minimum_size = Vector2(32, 0)
 layout_mode = 2
+theme = ExtResource("5_m1wwi")
 bbcode_enabled = true
-text = "[color=white]O[/color][color=#54fcfc]n[/color]"
+text = "[color=white]S[/color][color=#54fcfc]ettings[/color]"
+fit_content = true
 scroll_active = false
+autowrap_mode = 0
+text_direction = 2
 
-[node name="VBox2" type="VBoxContainer" parent="MenuItemsContainer/HBox/SFX_HBox"]
-unique_name_in_owner = true
+[node name="GapRight" type="Control" parent="MenuItemsContainer/HBox/SFX_HBox"]
 layout_mode = 2
+custom_minimum_size = Vector2(5, 0)
 
-[node name="SFXButton" type="TextureButton" parent="MenuItemsContainer/HBox/SFX_HBox/VBox2"]
-unique_name_in_owner = true
-layout_mode = 2
-texture_normal = ExtResource("3_hjx2r")
-texture_pressed = ExtResource("4_cfbpr")
-
-[node name="VBox3" type="VBoxContainer" parent="MenuItemsContainer/HBox/SFX_HBox"]
-layout_mode = 2
-
-[node name="MusicButton" type="TextureButton" parent="MenuItemsContainer/HBox/SFX_HBox/VBox3"]
+[node name="SettingsButton" type="TextureButton" parent="MenuItemsContainer/HBox/SFX_HBox"]
 unique_name_in_owner = true
 layout_mode = 2
 texture_normal = ExtResource("3_hjx2r")
 texture_pressed = ExtResource("4_cfbpr")
 
-[node name="MusicIndicatorLabel" type="RichTextLabel" parent="MenuItemsContainer/HBox/SFX_HBox"]
-unique_name_in_owner = true
-clip_contents = false
-custom_minimum_size = Vector2(100, 0)
+[node name="MarginRight" type="Control" parent="MenuItemsContainer/HBox/SFX_HBox"]
 layout_mode = 2
-bbcode_enabled = true
-text = "[color=white]C[/color][color=#54fcfc]lassic[/color]"
+custom_minimum_size = Vector2(16, 0)
 
 [node name="Grid2" type="Sprite2D" parent="."]
 position = Vector2(273, 611)

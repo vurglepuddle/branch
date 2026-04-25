@@ -74,6 +74,16 @@ func setup_audio_players():
 
 func initialize_audio_settings():
 	print("AudioManager initialize_audio_settings: START")
+	sfx_enabled = GlobalSettings.sfx_enabled
+	match GlobalSettings.music_style:
+		"classic":
+			current_music_style = MusicStyle.CLASSIC
+			is_menu_music_off = false
+		"modern":
+			current_music_style = MusicStyle.MODERN
+			is_menu_music_off = false
+		"off":
+			is_menu_music_off = true
 	sfx_player.volume_db = DEFAULT_SFX_VOLUME_DB if sfx_enabled else MUSIC_MUTED_VOLUME_DB
 
 	_update_menu_music_on_state_change(true, INITIAL_MUSIC_FADE_IN_DURATION)
@@ -104,6 +114,8 @@ func toggle_sfx_enabled():
 	sfx_enabled = !sfx_enabled
 	sfx_player.volume_db = DEFAULT_SFX_VOLUME_DB if sfx_enabled else MUSIC_MUTED_VOLUME_DB
 	print("AudioManager: SFX " + ("ENABLED" if sfx_enabled else "DISABLED"))
+	GlobalSettings.sfx_enabled = sfx_enabled
+	GlobalSettings.save_settings()
 	if sfx_enabled:
 		play_named_sfx("beep_sound")
 
@@ -222,8 +234,10 @@ func toggle_music_style_and_state():
 		display_name = "Classic"
 
 	emit_signal("music_display_changed", display_name)
-	play_named_sfx(sfx_key_for_this_action) 
-	_update_menu_music_on_state_change() 
+	GlobalSettings.music_style = "off" if is_menu_music_off else ("classic" if current_music_style == MusicStyle.CLASSIC else "modern")
+	GlobalSettings.save_settings()
+	play_named_sfx(sfx_key_for_this_action)
+	_update_menu_music_on_state_change()
 
 func _update_menu_music_on_state_change(fade_in: bool = true, duration: float = MUSIC_FADE_DURATION):
 	if music_globally_muted:
