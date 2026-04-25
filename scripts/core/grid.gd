@@ -46,8 +46,12 @@ var source_tile = null  # Holds a reference to the source tile
 var bg1
 var all_connected = false # class-level variable for win condition
 
+var _game_hud: CanvasLayer
+
 func _ready():
 	randomize()
+	_game_hud = preload("res://scenes/GameHUD.tscn").instantiate()
+	add_child(_game_hud)
 	if GlobalSettings: # Check if the Autoload script exists
 		current_difficulty_str = GlobalSettings.current_difficulty
 		print("Grid: Loaded difficulty from GlobalSettings: " + current_difficulty_str)
@@ -357,6 +361,8 @@ func init_branches(g_width: int, g_height: int, b_scene: PackedScene,
 func _on_branch_clicked(x: int, y: int):
 	if all_connected or is_level_complete_animation_playing:
 		print("Input disabled, level already complete.")
+		return
+	if is_instance_valid(_game_hud) and _game_hud.panel_is_open:
 		return
 	# Play the beep sound
 	if AudioManager:

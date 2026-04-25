@@ -1,0 +1,125 @@
+[gd_scene load_steps=5 format=3 uid="uid://dpy01n4byl66"]
+
+[ext_resource type="Script" path="res://scripts/core/game_hud.gd" id="1_ghud"]
+[ext_resource type="Texture2D" uid="uid://cymixqe6877j7" path="res://sprites/UI/button_default.png" id="2_btn"]
+[ext_resource type="Texture2D" uid="uid://dbuyqnsrkb6sg" path="res://sprites/UI/button_press.png" id="3_btnp"]
+[ext_resource type="Theme" uid="uid://mecrr0hcgwnn" path="res://fonts/main_theme.tres" id="4_theme"]
+
+[node name="GameHUD" type="CanvasLayer"]
+layer = 2
+script = ExtResource("1_ghud")
+
+[node name="HUDRoot" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Panel" type="Control" parent="HUDRoot"]
+anchors_preset = 0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 18.0
+offset_top = -32.0
+offset_right = -18.0
+offset_bottom = 70.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="PanelBg" type="ColorRect" parent="HUDRoot/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0.658824, 1)
+
+[node name="HandleArea" type="Control" parent="HUDRoot/Panel"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 32.0
+grow_horizontal = 2
+mouse_filter = 2
+
+[node name="Pill" type="ColorRect" parent="HUDRoot/Panel/HandleArea"]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -22.0
+offset_top = -3.0
+offset_right = 22.0
+offset_bottom = 3.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.4, 0.7, 1, 0.5)
+
+[node name="ButtonArea" type="HBoxContainer" parent="HUDRoot/Panel"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 36.0
+offset_bottom = 102.0
+grow_horizontal = 2
+theme_override_constants/separation = 0
+
+[node name="MarginLeft" type="Control" parent="HUDRoot/Panel/ButtonArea"]
+custom_minimum_size = Vector2(20, 0)
+layout_mode = 2
+
+[node name="GiveUpButton" type="TextureButton" parent="HUDRoot/Panel/ButtonArea"]
+unique_name_in_owner = true
+layout_mode = 2
+texture_normal = ExtResource("2_btn")
+texture_pressed = ExtResource("3_btnp")
+
+[node name="GapLeft" type="Control" parent="HUDRoot/Panel/ButtonArea"]
+custom_minimum_size = Vector2(5, 0)
+layout_mode = 2
+
+[node name="GiveUpLabel" type="RichTextLabel" parent="HUDRoot/Panel/ButtonArea"]
+unique_name_in_owner = true
+clip_contents = false
+layout_mode = 2
+size_flags_horizontal = 3
+theme = ExtResource("4_theme")
+bbcode_enabled = true
+text = "[color=white]G[/color][color=#54fcfc]ive Up[/color]"
+fit_content = true
+scroll_active = false
+autowrap_mode = 0
+
+[node name="SettingsLabel" type="RichTextLabel" parent="HUDRoot/Panel/ButtonArea"]
+unique_name_in_owner = true
+clip_contents = false
+layout_mode = 2
+size_flags_horizontal = 3
+theme = ExtResource("4_theme")
+bbcode_enabled = true
+text = "[color=white]S[/color][color=#54fcfc]ettings[/color]"
+fit_content = true
+scroll_active = false
+autowrap_mode = 0
+text_direction = 2
+
+[node name="GapRight" type="Control" parent="HUDRoot/Panel/ButtonArea"]
+custom_minimum_size = Vector2(5, 0)
+layout_mode = 2
+
+[node name="SettingsButton" type="TextureButton" parent="HUDRoot/Panel/ButtonArea"]
+unique_name_in_owner = true
+layout_mode = 2
+texture_normal = ExtResource("2_btn")
+texture_pressed = ExtResource("3_btnp")
+
+[node name="MarginRight" type="Control" parent="HUDRoot/Panel/ButtonArea"]
+custom_minimum_size = Vector2(20, 0)
+layout_mode = 2
