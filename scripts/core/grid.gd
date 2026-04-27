@@ -117,10 +117,12 @@ func load_level_for_current_difficulty():
 	is_level_complete_animation_playing = false
 	print("Old branches cleared and state reset.")
 
+	var valid_cells: Dictionary = DifficultyLayouts.get_valid_cells(self.current_difficulty_str)
 	print("Calling init_branches...")
-	init_branches(grid_width, grid_height, BranchScene, 
+	init_branches(grid_width, grid_height, BranchScene,
 				  prim_density_factor, prim_min_tiles,
-				  final_target_density, final_variation, self.is_toroidal_grid, max_gen_attempts_for_level)
+				  final_target_density, final_variation, self.is_toroidal_grid, max_gen_attempts_for_level,
+				  valid_cells)
 	print("init_branches call finished. Current branch count in array: %s" % branches.size())
 	
 	var actual_branch_children_count = 0
@@ -220,11 +222,12 @@ func _process(_delta):
 func init_branches(g_width: int, g_height: int, b_scene: PackedScene,
 				   initial_prim_density: float, min_prim_abs_tiles: int,
 				   target_final_density: float, final_density_variation: float,
-				   p_is_toroidal: bool,  p_max_generation_attempts: int)-> void:
+				   p_is_toroidal: bool, p_max_generation_attempts: int,
+				   p_valid_cells: Dictionary = {}) -> void:
 
 	var puzzle_data = null
 	var actual_final_active_tile_count = 0
-	var num_total_cells_on_grid = g_width * g_height
+	var num_total_cells_on_grid: int = p_valid_cells.size() if not p_valid_cells.is_empty() else g_width * g_height
 
 	# Calculate the desired *range* for the final number of active tiles
 	var base_desired_final_tiles = floor(num_total_cells_on_grid * target_final_density)
@@ -245,9 +248,9 @@ func init_branches(g_width: int, g_height: int, b_scene: PackedScene,
 	while attempts < p_max_generation_attempts:
 		attempts += 1
 		print("Generation attempt #%s (Prim's target: density_factor=%s, min_tiles=%s)..." % [attempts, initial_prim_density, min_prim_abs_tiles])
-		puzzle_data = generator.generate_solvable_puzzle(g_width, g_height, b_scene, 
+		puzzle_data = generator.generate_solvable_puzzle(g_width, g_height, b_scene,
 														 initial_prim_density, min_prim_abs_tiles,
-														 p_is_toroidal)
+														 p_is_toroidal, p_valid_cells)
 		
 		actual_final_active_tile_count = 0 
 		if puzzle_data and puzzle_data.has("branches"):

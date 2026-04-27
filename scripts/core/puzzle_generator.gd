@@ -153,14 +153,15 @@ func degrade_to_three_connections(four_conn_array: Array) -> Array:
 func generate_solvable_puzzle(grid_width: int, grid_height: int, branch_scene: PackedScene,
 							  prim_initial_density_factor: float = 0.85,
 							  prim_min_target_tiles: int = 10,
-							  p_is_toroidal: bool = false) -> Dictionary:
+							  p_is_toroidal: bool = false,
+							  valid_cells: Dictionary = {}) -> Dictionary:
 	var final_branches_grid = []
 	for x in range(grid_width):
 		final_branches_grid.append([])
 		for y in range(grid_height):
 			final_branches_grid[x].append(null)
 
-	var num_total_cells = grid_width * grid_height
+	var num_total_cells: int = valid_cells.size() if not valid_cells.is_empty() else grid_width * grid_height
 	
 	# Calculate the target number of active tiles for Prim's algorithm
 	var calculated_target_for_prim = floor(num_total_cells * prim_initial_density_factor)
@@ -168,9 +169,17 @@ func generate_solvable_puzzle(grid_width: int, grid_height: int, branch_scene: P
 	num_active_tiles_target_for_prim = min(num_active_tiles_target_for_prim, num_total_cells) # Clamp to max
 
 	var initial_active_cell_keys = {}
-	var cell_tree_connections = {} 
-	var source_x = randi_range(0, grid_width - 1)
-	var source_y = randi_range(0, grid_height - 1)
+	var cell_tree_connections = {}
+	var source_x: int
+	var source_y: int
+	if not valid_cells.is_empty():
+		var cell_keys: Array = valid_cells.keys()
+		var chosen: String = cell_keys[randi() % cell_keys.size()]
+		var parts: Array = chosen.split(",")
+		source_x = int(parts[0]); source_y = int(parts[1])
+	else:
+		source_x = randi_range(0, grid_width - 1)
+		source_y = randi_range(0, grid_height - 1)
 	var frontier = [] 
 	var source_key_str = "%s,%s" % [source_x, source_y]
 	initial_active_cell_keys[source_key_str] = true
@@ -188,14 +197,15 @@ func generate_solvable_puzzle(grid_width: int, grid_height: int, branch_scene: P
 		if p_is_toroidal:
 			nx = get_toroidal_neighbor_coord(nx_raw, grid_width)
 			ny = get_toroidal_neighbor_coord(ny_raw, grid_height)
-			# For toroidal, neighbor always "exists" logically after wrapping.
-			# Key will be based on wrapped coords. If it's the source itself, it's already in tree.
-			if not ("%s,%s" % [nx, ny] == source_key_str): # Avoid adding source to frontier from itself
+			var nk: String = "%s,%s" % [nx, ny]
+			if nk != source_key_str and (valid_cells.is_empty() or valid_cells.has(nk)):
 				frontier.append({"x": nx, "y": ny, "parent_x": source_x, "parent_y": source_y})
 		else:
 			nx = nx_raw
 			ny = ny_raw
-			if is_valid_position(nx, ny, grid_width, grid_height):
+			var nk: String = "%s,%s" % [nx, ny]
+			if is_valid_position(nx, ny, grid_width, grid_height) and \
+			   (valid_cells.is_empty() or valid_cells.has(nk)):
 				frontier.append({"x": nx, "y": ny, "parent_x": source_x, "parent_y": source_y})
 				
 	while frontier.size() > 0 and cells_in_tree_count < num_active_tiles_target_for_prim:
@@ -231,13 +241,17 @@ func generate_solvable_puzzle(grid_width: int, grid_height: int, branch_scene: P
 			if p_is_toroidal:
 				nx = get_toroidal_neighbor_coord(nx_raw, grid_width)
 				ny = get_toroidal_neighbor_coord(ny_raw, grid_height)
-				if not initial_active_cell_keys.has("%s,%s" % [nx,ny]): # Check with wrapped key
+				var nk2: String = "%s,%s" % [nx, ny]
+				if not initial_active_cell_keys.has(nk2) and \
+				   (valid_cells.is_empty() or valid_cells.has(nk2)):
 					consider_neighbor = true
 			else: # Non-toroidal
 				nx = nx_raw
 				ny = ny_raw
+				var nk2: String = "%s,%s" % [nx, ny]
 				if is_valid_position(nx, ny, grid_width, grid_height) and \
-				   not initial_active_cell_keys.has("%s,%s" % [nx,ny]):
+				   not initial_active_cell_keys.has(nk2) and \
+				   (valid_cells.is_empty() or valid_cells.has(nk2)):
 					consider_neighbor = true
 					
 			if consider_neighbor:
