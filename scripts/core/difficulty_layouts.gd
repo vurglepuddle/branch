@@ -333,6 +333,15 @@ const PREVIEW_LAYOUTS = {
 		{"tile_type_enum": BranchType.TERMINAL, "pos": Vector2i(4, 11), "rot_idx": 3, "state": "alive"},
 		{"tile_type_enum": BranchType.STRAIGHT, "pos": Vector2i(3, 12), "rot_idx": 0, "state": "alive"},
 		{"tile_type_enum": BranchType.TERMINAL, "pos": Vector2i(3, 13), "rot_idx": 0, "state": "alive"},
+		
+#embellishment-16
+		{"tile_type_enum": BranchType.TERMINAL, "pos": Vector2i(0, 16), "rot_idx": 1, "state": "dead"},
+		{"tile_type_enum": BranchType.STRAIGHT, "pos": Vector2i(1, 16), "rot_idx": 1, "state": "dead"},
+		{"tile_type_enum": BranchType.STRAIGHT, "pos": Vector2i(2, 16), "rot_idx": 1, "state": "dead"},
+		{"tile_type_enum": BranchType.STRAIGHT, "pos": Vector2i(3, 16), "rot_idx": 1, "state": "dead"},
+		{"tile_type_enum": BranchType.STRAIGHT, "pos": Vector2i(4, 16), "rot_idx": 1, "state": "dead"},
+		{"tile_type_enum": BranchType.TERMINAL, "pos": Vector2i(5, 16), "rot_idx": 3, "state": "dead"},
+		
 	],
 	"torrero": [
 #t
@@ -395,9 +404,9 @@ const PREVIEW_LAYOUTS = {
 		{"tile_type_enum": BranchType.STRAIGHT, "pos": Vector2i(3, 15), "rot_idx": 0, "state": "dead"},
 		
 #embellishment-row-by-row
-		{"tile_type_enum": BranchType.TERMINAL, "pos": Vector2i(0, 0), "rot_idx": 2, "state": "dead"},
+		{"tile_type_enum": BranchType.STRAIGHT, "pos": Vector2i(0, 0), "rot_idx": 0, "state": "dead"},
 		{"tile_type_enum": BranchType.STRAIGHT, "pos": Vector2i(3, 0), "rot_idx": 0, "state": "dead"},
-		{"tile_type_enum": BranchType.TERMINAL, "pos": Vector2i(5, 0), "rot_idx": 2, "state": "dead"},
+		{"tile_type_enum": BranchType.STRAIGHT, "pos": Vector2i(5, 0), "rot_idx": 0, "state": "dead"},
 		
 		{"tile_type_enum": BranchType.BEND, "pos": Vector2i(0, 1), "rot_idx": 0, "state": "dead"},
 		{"tile_type_enum": BranchType.STRAIGHT, "pos": Vector2i(1, 1), "rot_idx": 1, "state": "dead"},
@@ -451,5 +460,22 @@ const PREVIEW_LAYOUTS = {
 		{"tile_type_enum": BranchType.STRAIGHT, "pos": Vector2i(5, 8), "rot_idx": 0, "state": "dead"},
 		{"tile_type_enum": BranchType.STRAIGHT, "pos": Vector2i(5, 9), "rot_idx": 0, "state": "dead"},
 		{"tile_type_enum": BranchType.BEND, "pos": Vector2i(5, 10), "rot_idx": 0, "state": "dead"},
+		
+#embellishment-row-16
+		{"tile_type_enum": BranchType.TERMINAL, "pos": Vector2i(0, 16), "rot_idx": 2, "state": "dead"},
+		{"tile_type_enum": BranchType.STRAIGHT, "pos": Vector2i(1, 16), "rot_idx": 0, "state": "alive"},
+		{"tile_type_enum": BranchType.STRAIGHT, "pos": Vector2i(2, 16), "rot_idx": 0, "state": "alive"},
+		{"tile_type_enum": BranchType.STRAIGHT, "pos": Vector2i(3, 16), "rot_idx": 0, "state": "dead"},
+		{"tile_type_enum": BranchType.STRAIGHT, "pos": Vector2i(4, 16), "rot_idx": 0, "state": "alive"},
+		{"tile_type_enum": BranchType.TERMINAL, "pos": Vector2i(5, 16), "rot_idx": 2, "state": "dead"},
+
 	],
 }
+
+# Returns a Dictionary of "x,y" string keys → true, for O(1) lookup in the generator.
+func get_valid_cells(difficulty: String) -> Dictionary:
+	var result: Dictionary = {}
+	for tile_info in PREVIEW_LAYOUTS.get(difficulty, []):
+		var pos: Vector2i = tile_info["pos"]
+		result["%s,%s" % [pos.x, pos.y]] = true
+	return result
