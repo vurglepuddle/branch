@@ -13,9 +13,9 @@ BranchScene = ExtResource("2_uk0hh")
 
 [node name="ColorRect2" type="ColorRect" parent="."]
 z_index = -99
-offset_left = -3.0
+offset_left = -4.0
 offset_top = -4.0
-offset_right = 507.0
+offset_right = 508.0
 offset_bottom = 1220.0
 color = Color(0, 0, 0.658824, 1)
 

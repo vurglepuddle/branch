@@ -166,7 +166,7 @@ func _input(event: InputEvent):
 			if should_return_to_menu:
 				# Consume the input BEFORE changing the scene
 				get_viewport().set_input_as_handled() 
-				_return_to_main_menu()
+				_exit_to_main_menu()
 				# No 'return' needed here if _return_to_main_menu changes scene, 
 				# as this node will likely be gone before further _input processing.
 				# However, to be absolutely safe and prevent further code in _input from running for this event:
@@ -198,7 +198,7 @@ func _input(event: InputEvent):
 func center_grid():
 	var screen_size = get_viewport_rect().size
 	var grid_size = Vector2(grid_width * 84, grid_height * 68)
-	position = (screen_size - grid_size) / 2
+	position = ((screen_size - grid_size) / 2.0).ceil() + Vector2(1, 0)
 
 
 func _process(_delta):
@@ -626,7 +626,7 @@ func _load_from_pending_puzzle() -> void:
 
 func _on_give_up_requested() -> void:
 	if not GlobalSettings.give_up_animation:
-		_return_to_main_menu()
+		_exit_to_main_menu()
 		return
 	_game_hud.hide_panel()
 	_game_hud.locked = true
@@ -691,16 +691,83 @@ func _run_solve_animation() -> void:
 	level_won_waiting_for_exit_input = true
 	await get_tree().create_timer(3.0).timeout
 	if level_won_waiting_for_exit_input:
-		_return_to_main_menu()
+		_exit_to_main_menu()
 
-func _return_to_main_menu():
-	level_won_waiting_for_exit_input = false # Reset the flag
+func _exit_to_main_menu() -> void:
+	level_won_waiting_for_exit_input = false
+	is_level_complete_animation_playing = true
 
-	if AudioManager:
-		# AudioManager._load_and_set_music_track_from_stream(null, false, false, 0.1) # Stop music quickly
-		pass
+	var canvas := CanvasLayer.new()
+	canvas.layer = 3
+	add_child(canvas)
 
-	SceneChanger.change_scene_with_fade("res://scenes/main_menu.tscn", 0.2)
+	var fake_panel := ColorRect.new()
+	fake_panel.color = Color(0, 0, 0.658824, 1)
+	fake_panel.size = Vector2(511, 116)
+	fake_panel.position = Vector2(17.0, 1538.0)
+	canvas.add_child(fake_panel)
+
+	var diff: String = current_difficulty_str
+	var preview_layout: Array = DifficultyLayouts.PREVIEW_LAYOUTS.get(diff, [])
+	var preview_map: Dictionary = {}
+	for tile_info in preview_layout:
+		preview_map[tile_info["pos"]] = tile_info
+
+	var pos_set: Dictionary = {}
+	for tile_info in preview_layout:
+		pos_set[tile_info["pos"]] = true
+	for x in range(grid_width):
+		for y in range(grid_height):
+			var b: BranchNode = branches[x][y]
+			if b != null and b.branch_type != BranchType.EMPTY:
+				pos_set[Vector2i(x, y)] = true
+
+	var positions: Array = pos_set.keys()
+	positions.shuffle()
+
+	var total: int = positions.size()
+	var slide_started: bool = false
+	var branch_preview_scene: PackedScene = preload("res://scenes/Branch_Preview.tscn")
+
+	for i in range(total):
+		var pos: Vector2i = positions[i]
+		var screen_pos := position + Vector2(pos.x * 84 + 42, pos.y * 68 + 34)
+
+		if pos.x < branches.size() and pos.y < branches[pos.x].size() and branches[pos.x][pos.y] != null:
+			branches[pos.x][pos.y].visible = false
+
+		if preview_map.has(pos):
+			var info: Dictionary = preview_map[pos]
+			var node: Node2D = branch_preview_scene.instantiate()
+			node.position = screen_pos
+			canvas.add_child(node)
+			node.set_tile_visuals(info["tile_type_enum"], info["rot_idx"],
+								  info.get("state", "alive"))
+
+		if AudioManager:
+			AudioManager.play_beep_pitched(pos.y, grid_height)
+
+		if not slide_started and i >= int(total * 0.70):
+			slide_started = true
+			var slide_duration: float = maxf((total - i) * 0.01, 0.12)
+			var tween := create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+			tween.tween_property(fake_panel, "position:y", 1122.0, slide_duration)
+
+		if i < total - 1:
+			await get_tree().create_timer(0.01).timeout
+
+	GlobalSettings.return_from_game = true
+	var menu: Node = load("res://scenes/main_menu.tscn").instantiate()
+	get_tree().root.add_child(menu)
+	get_tree().current_scene = menu
+	# Frame-based wait: call_deferred(frame1) → generate_preview+await(frame2)
+	# → texture set(frame3) → buffer(frames 4-5).
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await get_tree().process_frame
+	queue_free()
 
 
 #func run_batch_generation_test(difficulty_to_test: String, num_runs: int = 100):

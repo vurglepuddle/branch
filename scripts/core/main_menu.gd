@@ -22,6 +22,8 @@ const _PRIM_SETTINGS: Dictionary = {
 
 @onready var word_preview_renderer: SubViewport = $WordPreviewRenderer
 @onready var difficulty_preview_display: TextureRect = $DifficultyPreviewDisplay
+@onready var _hint_left: RichTextLabel = %SwipeHintLeft
+@onready var _hint_right: RichTextLabel = %SwipeHintRight
 
 var difficulty_levels: Array = ["baby", "intern", "profi", "master", "expert", "torrero"]
 var current_difficulty_index: int
@@ -33,6 +35,7 @@ const SWIPE_THRESHOLD: float = 60.0
 var _drag_start: Vector2 = Vector2(-1.0, -1.0)
 var _settings_overlay: Control
 var _transitioning: bool = false
+var _preview_generation_id: int = 0
 
 func _format_label_text(base_text: String) -> String:
 	if base_text.is_empty():
@@ -44,6 +47,8 @@ func _format_label_text(base_text: String) -> String:
 func _ready():
 	start_button.pressed.connect(_on_start_button_pressed)
 	settings_button.pressed.connect(_on_settings_button_pressed)
+	difficulty_preview_display.visible = false
+	difficulty_preview_display.texture = null
 	print("MainMenu: _ready() - Signals connected.")
 
 	var overlay_scene: PackedScene = preload("res://scenes/SettingsOverlay.tscn")
@@ -61,12 +66,17 @@ func _ready():
 		printerr("MainMenu: GlobalSettings not found in _ready(). Defaulting difficulty index to 0.")
 
 	call_deferred("_initialize_post_audio_manager_ready")
+	_animate_swipe_hints()
 	update_difficulty_display()
 	if GlobalSettings:
 		GlobalSettings.current_difficulty = difficulty_levels[current_difficulty_index]
 
 func _initialize_post_audio_manager_ready():
 	_update_difficulty_preview()
+
+	if GlobalSettings.return_from_game:
+		GlobalSettings.return_from_game = false
+		return  # overlay in grid.gd is still covering; no fade needed
 
 	if FadeOverlay:
 		FadeOverlay.fade_rect.color = Color.BLACK
@@ -92,7 +102,7 @@ func _input(event: InputEvent) -> void:
 			return
 		var dx: float = event.position.x - _drag_start.x
 		if abs(dx) > SWIPE_THRESHOLD:
-			_cycle_difficulty(1 if dx > 0 else -1)
+			_cycle_difficulty(-1 if dx > 0 else 1)
 			_drag_start = Vector2(-1.0, -1.0)
 			get_viewport().set_input_as_handled()
 
@@ -108,32 +118,63 @@ func _cycle_difficulty(direction: int) -> void:
 	_update_difficulty_preview()
 
 func _update_difficulty_preview():
+	_preview_generation_id += 1
+	var generation_id: int = _preview_generation_id
+
 	if not is_instance_valid(word_preview_renderer) or not is_instance_valid(difficulty_preview_display):
 		printerr("MainMenu: Preview renderer or display TextureRect not ready/assigned.")
 		if is_instance_valid(difficulty_preview_display):
 			difficulty_preview_display.texture = null
 			difficulty_preview_display.custom_minimum_size = Vector2.ZERO
+			difficulty_preview_display.visible = false
 		return
 
 	var current_difficulty_name: String = difficulty_levels[current_difficulty_index]
 	print("MainMenu: Updating preview for '", current_difficulty_name, "'")
 
+	difficulty_preview_display.visible = false
+	difficulty_preview_display.texture = null
+
 	if not word_preview_renderer.is_node_ready():
 		print("MainMenu: word_preview_renderer not ready yet, awaiting...")
 		await word_preview_renderer.ready
+		if generation_id != _preview_generation_id:
+			return
 
 	word_preview_renderer.generate_preview(current_difficulty_name)
 	await get_tree().process_frame
+	await get_tree().process_frame
+	if generation_id != _preview_generation_id:
+		return
+
 	var vp_texture: ViewportTexture = word_preview_renderer.get_texture()
 
 	if vp_texture and vp_texture.get_width() > 0 and vp_texture.get_height() > 0:
 		difficulty_preview_display.texture = vp_texture
 		difficulty_preview_display.custom_minimum_size = vp_texture.get_size()
 		difficulty_preview_display.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		difficulty_preview_display.visible = true
 	else:
 		printerr("MainMenu: Failed to get valid texture from SubViewport for '", current_difficulty_name, "'")
 		difficulty_preview_display.texture = null
 		difficulty_preview_display.custom_minimum_size = Vector2.ZERO
+		difficulty_preview_display.visible = false
+
+func _animate_swipe_hints() -> void:
+	var orig_left: float  = _hint_left.position.x
+	var orig_right: float = _hint_right.position.x
+	while is_instance_valid(self) and not _transitioning:
+		await get_tree().create_timer(2.5).timeout
+		if not is_instance_valid(self) or _transitioning:
+			break
+		var t1 := create_tween().set_parallel(true).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		t1.tween_property(_hint_left,  "position:x", orig_left  - 12.0, 0.22)
+		t1.tween_property(_hint_right, "position:x", orig_right + 12.0, 0.22)
+		await t1.finished
+		var t2 := create_tween().set_parallel(true).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+		t2.tween_property(_hint_left,  "position:x", orig_left,  0.22)
+		t2.tween_property(_hint_right, "position:x", orig_right, 0.22)
+		await t2.finished
 
 func _on_settings_button_pressed():
 	if AudioManager: AudioManager.play_named_sfx("beep_sound")
@@ -159,7 +200,16 @@ func _start_transition() -> void:
 	var grid: Node = load("res://scenes/Grid.tscn").instantiate()
 	get_tree().root.add_child(grid)
 	get_tree().current_scene = grid
+	_retire_preview_renderer()
+	await get_tree().process_frame
 	queue_free()
+
+func _retire_preview_renderer() -> void:
+	if is_instance_valid(difficulty_preview_display):
+		difficulty_preview_display.texture = null
+		difficulty_preview_display.visible = false
+	if is_instance_valid(word_preview_renderer) and word_preview_renderer.has_method("clear_preview"):
+		word_preview_renderer.clear_preview()
 
 func _generate_and_store_puzzle() -> void:
 	var diff: String = difficulty_levels[current_difficulty_index]
@@ -190,6 +240,8 @@ func _slide_menu_down() -> void:
 	tween.tween_property(panel, "offset_bottom", panel.offset_bottom + 300.0, 0.5)
 	tween.tween_property(%DifficultyLabel, "modulate:a", 0.0, 0.25)
 	tween.tween_property(hbox, "modulate:a", 0.0, 0.25)
+	tween.tween_property(_hint_left,  "modulate:a", 0.0, 0.25)
+	tween.tween_property(_hint_right, "modulate:a", 0.0, 0.25)
 
 func _collect_animation_positions() -> Array:
 	var pos_set: Dictionary = {}
