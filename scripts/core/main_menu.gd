@@ -1,5 +1,19 @@
 extends Control # res://scenes/main_menu.gd
 
+const BranchType = preload("res://scripts/core/branch_types.gd").BranchType
+const _BranchScene: PackedScene = preload("res://scenes/Branch.tscn")
+const _PuzzleGenerator = preload("res://scripts/core/puzzle_generator.gd")
+
+# Prim density settings mirrored from grid.gd (only what generate_solvable_puzzle needs).
+const _PRIM_SETTINGS: Dictionary = {
+	"baby":    {"factor": 0.1, "min": 4},
+	"intern":  {"factor": 0.3, "min": 8},
+	"profi":   {"factor": 0.5, "min": 20},
+	"master":  {"factor": 0.7, "min": 38},
+	"expert":  {"factor": 1.0, "min": 85},
+	"torrero": {"factor": 1.0, "min": 85},
+}
+
 @onready var difficulty_label: RichTextLabel = %DifficultyLabel
 @onready var start_button: TextureButton = %MenuItemsContainer/HBox/StartButton
 @onready var start_label: RichTextLabel = %MenuItemsContainer/HBox/StartLabel
@@ -18,6 +32,7 @@ const SWIPE_THRESHOLD: float = 60.0
 
 var _drag_start: Vector2 = Vector2(-1.0, -1.0)
 var _settings_overlay: Control
+var _transitioning: bool = false
 
 func _format_label_text(base_text: String) -> String:
 	if base_text.is_empty():
@@ -64,7 +79,7 @@ func _initialize_post_audio_manager_ready():
 		printerr("MainMenu: _initialize_post_audio_manager_ready - FadeOverlay NOT FOUND.")
 
 func _input(event: InputEvent) -> void:
-	if _settings_overlay != null and _settings_overlay.visible:
+	if _transitioning or (_settings_overlay != null and _settings_overlay.visible):
 		return
 
 	if event is InputEventScreenTouch or event is InputEventMouseButton:
@@ -124,10 +139,95 @@ func _on_settings_button_pressed():
 	if AudioManager: AudioManager.play_named_sfx("beep_sound")
 	_settings_overlay.open()
 
-func _on_start_button_pressed():
-	if AudioManager: AudioManager.play_named_sfx("beep_sound")
-	print("MainMenu: Starting game with difficulty: " + difficulty_levels[current_difficulty_index])
-	SceneChanger.change_scene_with_fade("res://scenes/Grid.tscn", 0.3)
+func _on_start_button_pressed() -> void:
+	if _transitioning:
+		return
+	if AudioManager:
+		AudioManager.play_named_sfx("beep_sound")
+	_start_transition()
+
+func _start_transition() -> void:
+	_transitioning = true
+	start_button.disabled = true
+	settings_button.disabled = true
+
+	_generate_and_store_puzzle()
+	_slide_menu_down()
+	await _animate_tile_loadout()
+
+	# Add Grid to root before freeing self — no scene switch, no viewport clear.
+	var grid: Node = load("res://scenes/Grid.tscn").instantiate()
+	get_tree().root.add_child(grid)
+	get_tree().current_scene = grid
+	queue_free()
+
+func _generate_and_store_puzzle() -> void:
+	var diff: String = difficulty_levels[current_difficulty_index]
+	var is_toroidal: bool = (diff == "torrero")
+	var s: Dictionary = _PRIM_SETTINGS[diff]
+	var valid_cells: Dictionary = DifficultyLayouts.get_valid_cells(diff)
+
+	var generator = _PuzzleGenerator.new()
+	var puzzle_data: Dictionary = generator.generate_solvable_puzzle(
+		6, 17,
+		_BranchScene,
+		s["factor"], s["min"],
+		is_toroidal,
+		valid_cells
+	)
+
+	GlobalSettings.pending_puzzle_data = puzzle_data
+	GlobalSettings.pending_puzzle_is_toroidal = is_toroidal
+
+func _slide_menu_down() -> void:
+	var mic: Node = %MenuItemsContainer
+	var panel: Node = $PanelBg_mainmenu
+	var hbox: Node = $MenuItemsContainer/HBox
+	var tween := create_tween().set_parallel(true).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	tween.tween_property(mic,   "offset_top",    mic.offset_top    + 300.0, 0.5)
+	tween.tween_property(mic,   "offset_bottom", mic.offset_bottom + 300.0, 0.5)
+	tween.tween_property(panel, "offset_top",    panel.offset_top  + 300.0, 0.5)
+	tween.tween_property(panel, "offset_bottom", panel.offset_bottom + 300.0, 0.5)
+	tween.tween_property(%DifficultyLabel, "modulate:a", 0.0, 0.25)
+	tween.tween_property(hbox, "modulate:a", 0.0, 0.25)
+
+func _collect_animation_positions() -> Array:
+	var pos_set: Dictionary = {}
+	var diff: String = difficulty_levels[current_difficulty_index]
+
+	# All positions shown in the preview layout
+	for tile_info in DifficultyLayouts.PREVIEW_LAYOUTS.get(diff, []):
+		pos_set[tile_info["pos"]] = true
+
+	# All non-EMPTY positions in the generated puzzle
+	var branches: Array = GlobalSettings.pending_puzzle_data.get("branches", [])
+	for x in range(branches.size()):
+		for y in range(branches[x].size()):
+			var b = branches[x][y]
+			if b != null and b.branch_type != BranchType.EMPTY:
+				pos_set[Vector2i(x, y)] = true
+
+	var result: Array = pos_set.keys()
+	result.shuffle()
+	return result
+
+func _animate_tile_loadout() -> void:
+	var branches: Array = GlobalSettings.pending_puzzle_data.get("branches", [])
+	var positions: Array = _collect_animation_positions()
+
+	for pos in positions:
+		await get_tree().create_timer(0.02).timeout
+		var x: int = pos.x
+		var y: int = pos.y
+		var b = branches[x][y] if x < branches.size() and y < branches[x].size() else null
+
+		if b != null and b.branch_type != BranchType.EMPTY:
+			word_preview_renderer.update_tile(x, y, b.branch_type, b.rotation_index, b.state)
+		else:
+			word_preview_renderer.hide_tile(x, y)
+
+		if AudioManager:
+			AudioManager.play_beep_pitched(pos.y, 17)
 
 func update_difficulty_display():
 	var key: String = difficulty_levels[current_difficulty_index]

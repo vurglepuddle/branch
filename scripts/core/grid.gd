@@ -34,17 +34,14 @@ var difficulty_key_map = {
 	KEY_6: "torrero"
 }
 
-var current_difficulty_str: String 
-var is_toroidal_grid: bool = false # Flag for toroidal mode
+var current_difficulty_str: String
+var is_toroidal_grid: bool = false
 
-# The size of the grid
-var grid_width  # Horizontal grid size
-var grid_height  # Vertical grid size
+var grid_width
+var grid_height
 var branches = []
-var source_tile = null  # Holds a reference to the source tile
-# Backgrounds
-var bg1
-var all_connected = false # class-level variable for win condition
+var source_tile = null
+var all_connected = false
 
 var _game_hud: CanvasLayer
 
@@ -53,22 +50,27 @@ func _ready():
 	_game_hud = preload("res://scenes/GameHUD.tscn").instantiate()
 	add_child(_game_hud)
 	_game_hud.give_up_requested.connect(_on_give_up_requested)
-	if GlobalSettings: # Check if the Autoload script exists
+	if GlobalSettings:
 		current_difficulty_str = GlobalSettings.current_difficulty
 		print("Grid: Loaded difficulty from GlobalSettings: " + current_difficulty_str)
 	else:
-		# Fallback if GlobalSettings is not found (e.g., running grid.tscn directly for testing)
-		current_difficulty_str = "torrero" # Your previous default value
+		current_difficulty_str = "torrero"
 		printerr("Grid: GlobalSettings Autoload not found! Using default difficulty: " + current_difficulty_str)
-	load_level_for_current_difficulty()
-	if FadeOverlay:
-		FadeOverlay.fade_rect.color = Color.BLACK
-		FadeOverlay.fade_rect.modulate.a = 1.0 
-		FadeOverlay.visible = true
-		FadeOverlay.start_fade_in(0.5)
-		print("Grid: Fade-in initiated.")
+
+	if GlobalSettings and not GlobalSettings.pending_puzzle_data.is_empty():
+		is_toroidal_grid = GlobalSettings.pending_puzzle_is_toroidal
+		_load_from_pending_puzzle()
+		GlobalSettings.pending_puzzle_data = {}
 	else:
-		printerr("Grid: FadeOverlay Autoload not found! Scene will appear abruptly.")
+		load_level_for_current_difficulty()
+		if FadeOverlay:
+			FadeOverlay.fade_rect.color = Color.BLACK
+			FadeOverlay.fade_rect.modulate.a = 1.0
+			FadeOverlay.visible = true
+			FadeOverlay.start_fade_in(0.5)
+			print("Grid: Fade-in initiated.")
+		else:
+			printerr("Grid: FadeOverlay Autoload not found! Scene will appear abruptly.")
 
 func load_level_for_current_difficulty():
 	print("--- load_level_for_current_difficulty START for: %s ---" % self.current_difficulty_str)
@@ -197,17 +199,6 @@ func center_grid():
 	var screen_size = get_viewport_rect().size
 	var grid_size = Vector2(grid_width * 84, grid_height * 68)
 	position = (screen_size - grid_size) / 2
-
-	var bg_texture1 = preload("res://sprites/branches/grid2.png")
-	if bg1 and is_instance_valid(bg1): # Remove old bg1 if it exists
-				bg1.queue_free()
-
-	bg1 = Sprite2D.new()
-	bg1.texture = bg_texture1
-	bg1.centered = false # Keep top-left as origin
-	bg1.z_index = -8
-	add_child(bg1)
-	#bg1.position = Vector2(0, 0)
 
 
 func _process(_delta):
@@ -596,6 +587,42 @@ func _spawn_single_leaf(branch: BranchNode, timer_node: Timer):
 	if is_instance_valid(timer_node):
 		timer_node.queue_free()
 
+
+func _load_from_pending_puzzle() -> void:
+	var data: Dictionary = GlobalSettings.pending_puzzle_data
+	branches = data["branches"]
+	var src_x: int = data["source_x"]
+	var src_y: int = data["source_y"]
+
+	grid_width = 6
+	grid_height = 17
+	all_connected = false
+	is_level_complete_animation_playing = false
+
+	if src_x < 0 or src_x >= grid_width or src_y < 0 or src_y >= grid_height or \
+	   branches[src_x][src_y] == null:
+		printerr("Grid: Invalid source in pending puzzle. Falling back to normal load.")
+		branches.clear()
+		load_level_for_current_difficulty()
+		return
+
+	source_tile = branches[src_x][src_y]
+
+	for x in range(grid_width):
+		for y in range(grid_height):
+			var b: BranchNode = branches[x][y]
+			if b != null:
+				b.position = Vector2(x * 84 + 42, y * 68 + 34)
+				if not b.is_connected("branch_clicked", Callable(self, "_on_branch_clicked")):
+					b.connect("branch_clicked", Callable(self, "_on_branch_clicked"))
+				if not b.is_connected("branch_right_clicked", Callable(self, "_on_branch_right_clicked")):
+					b.connect("branch_right_clicked", Callable(self, "_on_branch_right_clicked"))
+				add_child(b)
+
+	center_grid()
+	if AudioManager:
+		AudioManager.play_difficulty_music(current_difficulty_str)
+	defer_propagation(source_tile, is_toroidal_grid)
 
 func _on_give_up_requested() -> void:
 	if not GlobalSettings.give_up_animation:

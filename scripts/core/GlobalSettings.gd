@@ -9,6 +9,10 @@ var graphics_old: bool = false
 var language: String = "en"           # "en" | "ru"
 var give_up_animation: bool = true
 
+# Set by main_menu.gd before scene change; read and cleared by grid.gd on load.
+var pending_puzzle_data: Dictionary = {}
+var pending_puzzle_is_toroidal: bool = false
+
 const SETTINGS_PATH := "user://settings.cfg"
 
 func _ready() -> void:

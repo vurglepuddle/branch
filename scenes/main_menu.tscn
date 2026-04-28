@@ -118,7 +118,7 @@ layout_mode = 2
 
 [node name="DifficultyLabel" type="RichTextLabel" parent="."]
 unique_name_in_owner = true
-z_index = 102
+z_index = 112
 clip_contents = false
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 1
@@ -138,7 +138,8 @@ autowrap_mode = 0
 tab_size = 1
 
 [node name="Grid2" type="Sprite2D" parent="."]
-position = Vector2(273, 611)
+position = Vector2(272.5, 611)
+scale = Vector2(0.998016, 1)
 texture = ExtResource("3_8srqj")
 
 [node name="PanelBg_mainmenu" type="ColorRect" parent="."]
@@ -147,7 +148,7 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 18.0
+offset_left = 17.0
 offset_top = 1122.0
 offset_right = -17.0
 offset_bottom = 16.0
@@ -156,6 +157,7 @@ grow_vertical = 2
 color = Color(0, 0, 0.658824, 1)
 
 [node name="ColorRect" type="ColorRect" parent="."]
+visible = false
 layout_mode = 0
 offset_left = 18.0
 offset_top = 1122.0
@@ -166,14 +168,14 @@ color = Color(0, 0, 0.658824, 1)
 [node name="ColorRect2" type="ColorRect" parent="."]
 z_index = -99
 layout_mode = 0
-offset_left = 18.0
+offset_left = 17.0
 offset_top = 30.0
 offset_right = 528.0
-offset_bottom = 1137.0
+offset_bottom = 1254.0
 color = Color(0, 0, 0.658824, 1)
 
 [node name="Bg" type="Sprite2D" parent="."]
 z_index = -100
-position = Vector2(290, 610)
-scale = Vector2(0.298354, 0.298354)
+position = Vector2(275.5, 608)
+scale = Vector2(0.299191, 0.29911)
 texture = ExtResource("7_mg7qi")
