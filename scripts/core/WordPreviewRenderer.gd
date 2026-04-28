@@ -1,17 +1,18 @@
 # WordPreviewRenderer.gd
 extends SubViewport
 
-@export var branch_preview_scene: PackedScene 
-@export var cell_pixel_size: Vector2 = Vector2(84, 68) 
+const BranchType = preload("res://scripts/core/branch_types.gd").BranchType
 
-# Define the fixed size of your preview canvas IN TILES
-# For example, if you want it to always be 6 tiles wide like your game board,
-# and tall enough for any design (e.g., 5 tiles high for words, adjust as needed)
-@export var preview_grid_width_in_tiles: int = 6 
-# Max height your designs will ever need, or a comfortable fixed preview height
-@export var preview_grid_height_in_tiles: int = 17 # EXAMPLE: Adjust this based on your tallest design
+@export var branch_preview_scene: PackedScene
+@export var cell_pixel_size: Vector2 = Vector2(84, 68)
+
+@export var preview_grid_width_in_tiles: int = 6
+@export var preview_grid_height_in_tiles: int = 17
 
 @onready var tile_container: Node2D = $TileContainer
+
+# Maps Vector2i(x, y) → BranchPreviewNode for O(1) lookup during animation.
+var _tile_map: Dictionary = {}
 
 func _ready():
 	if not tile_container:
@@ -23,7 +24,7 @@ func _ready():
 	if not (DifficultyLayouts is Node):
 		printerr("WordPreviewRenderer: Autoload 'DifficultyLayouts' not valid.")
 		return
-	
+
 	if cell_pixel_size.x <= 0 or cell_pixel_size.y <= 0:
 		printerr("WordPreviewRenderer: cell_pixel_size is invalid (<=0).")
 		return
@@ -31,18 +32,14 @@ func _ready():
 		printerr("WordPreviewRenderer: preview_grid_width/height_in_tiles is invalid (<=0).")
 		return
 
-	# Set the SubViewport size ONCE based on the fixed preview grid dimensions
 	self.size = Vector2i(
 		ceil(preview_grid_width_in_tiles * cell_pixel_size.x),
 		ceil(preview_grid_height_in_tiles * cell_pixel_size.y)
 	)
-	print("WordPreviewRenderer _ready: Initialized SubViewport size to: ", self.size, 
-		  " (based on ", preview_grid_width_in_tiles, "x", preview_grid_height_in_tiles, " tiles)")
+	print("WordPreviewRenderer _ready: Initialized SubViewport size to: ", self.size)
 
 
 func generate_preview(difficulty_name: String):
-	# print("--- WordPreviewRenderer: generate_preview called for '", difficulty_name, "' ---")
-
 	if not branch_preview_scene or not is_instance_valid(tile_container) or not (DifficultyLayouts is Node) \
 	   or cell_pixel_size.x <= 0 or cell_pixel_size.y <= 0 \
 	   or preview_grid_width_in_tiles <= 0 or preview_grid_height_in_tiles <= 0:
@@ -51,25 +48,20 @@ func generate_preview(difficulty_name: String):
 
 	for child in tile_container.get_children():
 		child.queue_free()
+	_tile_map.clear()
 
-	var layouts = DifficultyLayouts.PREVIEW_LAYOUTS 
+	var layouts = DifficultyLayouts.PREVIEW_LAYOUTS
 	if not layouts.has(difficulty_name):
 		printerr("WordPreviewRenderer: No layout defined for '", difficulty_name, "'.")
-		return # No layout data, so nothing to draw
+		return
 
-	# --- THIS LINE WAS MISSING OR MISPLACED IN THE PREVIOUS EXAMPLE ---
-	var layout_data: Array = layouts[difficulty_name] 
-	# --- END OF FIX ---
-
+	var layout_data: Array = layouts[difficulty_name]
 	if layout_data.is_empty():
-		# print("WordPreviewRenderer: Layout data for '", difficulty_name, "' is EMPTY.")
-		return # No tiles to draw
-	# print("WordPreviewRenderer: Layout data for '", difficulty_name, "' has ", layout_data.size(), " tiles.")
-			
-	var tile_instance_count = 0
-	for tile_info in layout_data: # Now layout_data is correctly defined
+		return
+
+	for tile_info in layout_data:
 		if not ("tile_type_enum" in tile_info and "pos" in tile_info and "rot_idx" in tile_info):
-			printerr("WordPreviewRenderer: Invalid tile_info structure for '", difficulty_name, "': ", tile_info, " (missing essential fields)")
+			printerr("WordPreviewRenderer: Invalid tile_info structure: ", tile_info)
 			continue
 
 		var tile_type_enum_value = tile_info.tile_type_enum
@@ -79,28 +71,44 @@ func generate_preview(difficulty_name: String):
 
 		if absolute_grid_pos.x < 0 or absolute_grid_pos.x >= preview_grid_width_in_tiles or \
 		   absolute_grid_pos.y < 0 or absolute_grid_pos.y >= preview_grid_height_in_tiles:
-			printerr("WordPreviewRenderer: Tile pos ", absolute_grid_pos, " for '", difficulty_name, 
-					 "' is outside defined preview_grid bounds. Skipping tile.")
+			printerr("WordPreviewRenderer: Tile pos ", absolute_grid_pos, " out of bounds. Skipping.")
 			continue
-			
+
 		var tile_instance: Node2D = branch_preview_scene.instantiate()
 		if not tile_instance.has_method("set_tile_visuals"):
-			printerr("WordPreviewRenderer: Instantiated node from '", branch_preview_scene.resource_path, 
-					 "' DOES NOT HAVE 'set_tile_visuals' method! It is: ", tile_instance)
-			if tile_instance.get_script(): printerr("  Script on instance: ", tile_instance.get_script().resource_path)
-			else: printerr("  Instance has NO SCRIPT.")
 			tile_instance.queue_free()
 			continue
-			
+
 		tile_container.add_child(tile_instance)
-		tile_instance_count += 1
-		
 		tile_instance.position = Vector2(
 			absolute_grid_pos.x * cell_pixel_size.x + cell_pixel_size.x / 2.0,
 			absolute_grid_pos.y * cell_pixel_size.y + cell_pixel_size.y / 2.0
 		)
-		
 		tile_instance.set_tile_visuals(tile_type_enum_value, rotation_idx, tile_state)
-			
-	# print("WordPreviewRenderer: Instantiated ", tile_instance_count, " tile previews for '", difficulty_name, "'.")
-	# SubViewport size is fixed, set in _ready()
+		_tile_map[absolute_grid_pos] = tile_instance
+
+
+# Updates or creates a preview tile at (x, y) with the given game tile visuals.
+func update_tile(x: int, y: int, type_enum: int, rot_idx: int, state: String) -> void:
+	var key := Vector2i(x, y)
+	if not _tile_map.has(key):
+		if not branch_preview_scene:
+			return
+		var tile: Node2D = branch_preview_scene.instantiate()
+		if not tile.has_method("set_tile_visuals"):
+			tile.queue_free()
+			return
+		tile.position = Vector2(
+			x * cell_pixel_size.x + cell_pixel_size.x / 2.0,
+			y * cell_pixel_size.y + cell_pixel_size.y / 2.0
+		)
+		tile_container.add_child(tile)
+		_tile_map[key] = tile
+	_tile_map[key].set_tile_visuals(type_enum, rot_idx, state)
+
+
+# Hides a preview tile at (x, y) by setting it to EMPTY visuals.
+func hide_tile(x: int, y: int) -> void:
+	var key := Vector2i(x, y)
+	if _tile_map.has(key):
+		_tile_map[key].set_tile_visuals(BranchType.EMPTY, 0, "dead")
