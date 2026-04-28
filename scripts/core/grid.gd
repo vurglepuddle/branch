@@ -17,9 +17,9 @@ var difficulty_levels = {
 	# "prim_min_tiles": Absolute minimum tiles for Prim's target, useful for small grids
 	# "final_target_density_factor": Desired density AFTER pruning (0.0 to 1.0)
 	# "final_density_variation_factor": +/- variation on final_target_density (0.0 to 1.0 of the target)
-	"baby":   {"size": [6, 17], "prim_initial_density_factor": 0.1, "prim_min_tiles": 4, "final_target_density_factor": 0.1, "final_density_variation_factor": 0.1, "max_gen_attempts": 5},
-	"intern": {"size": [6, 17], "prim_initial_density_factor": 0.3, "prim_min_tiles": 8, "final_target_density_factor": 0.3, "final_density_variation_factor": 0.1, "max_gen_attempts": 10},
-	"profi":  {"size": [6, 17], "prim_initial_density_factor": 0.5, "prim_min_tiles": 20, "final_target_density_factor": 0.5, "final_density_variation_factor": 0.1, "max_gen_attempts": 10},
+	"baby":   {"size": [6, 17], "prim_initial_density_factor": 0.75, "prim_min_tiles": 7, "final_target_density_factor": 0.75, "final_density_variation_factor": 0.2, "max_gen_attempts": 12},
+	"intern": {"size": [6, 17], "prim_initial_density_factor": 0.5, "prim_min_tiles": 14, "final_target_density_factor": 0.5, "final_density_variation_factor": 0.1, "max_gen_attempts": 12},
+	"profi":  {"size": [6, 17], "prim_initial_density_factor": 0.55, "prim_min_tiles": 28, "final_target_density_factor": 0.55, "final_density_variation_factor": 0.1, "max_gen_attempts": 14},
 	"master": {"size": [6, 17], "prim_initial_density_factor": 0.7, "prim_min_tiles": 38, "final_target_density_factor": 0.7, "final_density_variation_factor": 0.1, "max_gen_attempts": 10},
 	"expert": {"size": [6, 17], "prim_initial_density_factor": 1.0, "prim_min_tiles": 85, "final_target_density_factor": 0.75, "final_density_variation_factor": 0.05, "max_gen_attempts": 15},
 	"torrero":{"size": [6, 17], "prim_initial_density_factor": 1.0, "prim_min_tiles": 85, "final_target_density_factor": 0.86, "final_density_variation_factor": 0.05, "max_gen_attempts": 15}
@@ -245,10 +245,7 @@ func init_branches(g_width: int, g_height: int, b_scene: PackedScene,
 		
 		actual_final_active_tile_count = 0 
 		if puzzle_data and puzzle_data.has("branches"):
-			for x_col in puzzle_data.branches:
-				for branch_node in x_col:
-					if branch_node and branch_node.branch_type != BranchType.EMPTY:
-						actual_final_active_tile_count += 1
+			actual_final_active_tile_count = generator.get_active_tile_count(puzzle_data)
 		else:
 			printerr("Puzzle generation failed to return valid branches structure on attempt %s." % attempts)
 			if attempts < p_max_generation_attempts:
@@ -258,15 +255,28 @@ func init_branches(g_width: int, g_height: int, b_scene: PackedScene,
 
 		print("Generated puzzle with %s active tiles." % actual_final_active_tile_count)
 
+		if generator.is_puzzle_initially_solved(puzzle_data):
+			print("Generated puzzle was already solved. Retrying...")
+			if attempts < p_max_generation_attempts:
+				generator.free_puzzle_nodes(puzzle_data)
+				puzzle_data = {}
+				continue
+
 		if actual_final_active_tile_count >= min_acceptable_final_tiles:
 			print("Acceptable density achieved.")
 			break 
 		
 		if attempts < p_max_generation_attempts:
 			print("Too sparse (min desired: %s). Retrying..." % min_acceptable_final_tiles)
+			generator.free_puzzle_nodes(puzzle_data)
+			puzzle_data = {}
+			continue
 
 	if actual_final_active_tile_count < min_acceptable_final_tiles:
 		print("Warning: Could not achieve desired minimum density (%s) after %s attempts. Proceeding with %s active tiles." % [min_acceptable_final_tiles, p_max_generation_attempts, actual_final_active_tile_count])
+	if puzzle_data and generator.is_puzzle_initially_solved(puzzle_data):
+		print("Warning: Final generated puzzle was initially solved. Rotating one tile out of solution.")
+		generator.ensure_puzzle_not_initially_solved(puzzle_data)
 
 	if not puzzle_data or not puzzle_data.has("branches") or not puzzle_data.has("source_x"):
 		printerr("FATAL: Puzzle data is invalid after all generation attempts!")

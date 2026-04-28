@@ -6,12 +6,12 @@ const _PuzzleGenerator = preload("res://scripts/core/puzzle_generator.gd")
 
 # Prim density settings mirrored from grid.gd (only what generate_solvable_puzzle needs).
 const _PRIM_SETTINGS: Dictionary = {
-	"baby":    {"factor": 0.1, "min": 4},
-	"intern":  {"factor": 0.3, "min": 8},
-	"profi":   {"factor": 0.5, "min": 20},
-	"master":  {"factor": 0.7, "min": 38},
-	"expert":  {"factor": 1.0, "min": 85},
-	"torrero": {"factor": 1.0, "min": 85},
+	"baby":    {"factor": 0.75, "min": 7, "final_factor": 0.75, "variation": 0.2, "attempts": 12},
+	"intern":  {"factor": 0.5, "min": 14, "final_factor": 0.5, "variation": 0.1, "attempts": 12},
+	"profi":   {"factor": 0.55, "min": 28, "final_factor": 0.55, "variation": 0.1, "attempts": 14},
+	"master":  {"factor": 0.7, "min": 38, "final_factor": 0.7, "variation": 0.1, "attempts": 10},
+	"expert":  {"factor": 1.0, "min": 85, "final_factor": 0.75, "variation": 0.05, "attempts": 15},
+	"torrero": {"factor": 1.0, "min": 85, "final_factor": 0.86, "variation": 0.05, "attempts": 15},
 }
 
 @onready var difficulty_label: RichTextLabel = %DifficultyLabel
@@ -216,18 +216,58 @@ func _generate_and_store_puzzle() -> void:
 	var is_toroidal: bool = (diff == "torrero")
 	var s: Dictionary = _PRIM_SETTINGS[diff]
 	var valid_cells: Dictionary = DifficultyLayouts.get_valid_cells(diff)
+	var min_acceptable_tiles: int = _get_min_acceptable_tiles(valid_cells.size(), s)
+	var max_attempts: int = int(s["attempts"])
 
 	var generator = _PuzzleGenerator.new()
-	var puzzle_data: Dictionary = generator.generate_solvable_puzzle(
-		6, 17,
-		_BranchScene,
-		s["factor"], s["min"],
-		is_toroidal,
-		valid_cells
-	)
+	var puzzle_data: Dictionary = {}
+	var best_puzzle_data: Dictionary = {}
+	var best_active_count: int = -1
+
+	for attempt in range(max_attempts):
+		var candidate: Dictionary = generator.generate_solvable_puzzle(
+			6, 17,
+			_BranchScene,
+			s["factor"], s["min"],
+			is_toroidal,
+			valid_cells
+		)
+		var active_count: int = generator.get_active_tile_count(candidate)
+		var initially_solved: bool = generator.is_puzzle_initially_solved(candidate)
+
+		if not initially_solved and active_count >= min_acceptable_tiles:
+			if not best_puzzle_data.is_empty():
+				generator.free_puzzle_nodes(best_puzzle_data)
+			puzzle_data = candidate
+			break
+
+		if not initially_solved and active_count > best_active_count:
+			if not best_puzzle_data.is_empty():
+				generator.free_puzzle_nodes(best_puzzle_data)
+			best_active_count = active_count
+			best_puzzle_data = candidate
+		else:
+			generator.free_puzzle_nodes(candidate)
+
+	if puzzle_data.is_empty():
+		puzzle_data = best_puzzle_data
+	if puzzle_data.is_empty():
+		puzzle_data = generator.generate_solvable_puzzle(
+			6, 17,
+			_BranchScene,
+			s["factor"], s["min"],
+			is_toroidal,
+			valid_cells
+		)
+	generator.ensure_puzzle_not_initially_solved(puzzle_data)
 
 	GlobalSettings.pending_puzzle_data = puzzle_data
 	GlobalSettings.pending_puzzle_is_toroidal = is_toroidal
+
+func _get_min_acceptable_tiles(num_total_cells: int, settings: Dictionary) -> int:
+	var base_desired_tiles: int = int(floor(num_total_cells * settings["final_factor"]))
+	var variation_amount: int = int(floor(base_desired_tiles * settings["variation"]))
+	return int(clamp(base_desired_tiles - variation_amount, 1, num_total_cells))
 
 func _slide_menu_down() -> void:
 	var mic: Node = %MenuItemsContainer
