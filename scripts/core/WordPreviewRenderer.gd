@@ -39,6 +39,16 @@ func _ready():
 	print("WordPreviewRenderer _ready: Initialized SubViewport size to: ", self.size)
 
 
+func clear_preview() -> void:
+	if not is_instance_valid(tile_container):
+		return
+
+	for child in tile_container.get_children():
+		tile_container.remove_child(child)
+		child.free()
+	_tile_map.clear()
+
+
 func generate_preview(difficulty_name: String):
 	if not branch_preview_scene or not is_instance_valid(tile_container) or not (DifficultyLayouts is Node) \
 	   or cell_pixel_size.x <= 0 or cell_pixel_size.y <= 0 \
@@ -46,9 +56,7 @@ func generate_preview(difficulty_name: String):
 		printerr("WordPreviewRenderer: Aborting generate_preview due to missing components or invalid settings.")
 		return
 
-	for child in tile_container.get_children():
-		child.queue_free()
-	_tile_map.clear()
+	clear_preview()
 
 	var layouts = DifficultyLayouts.PREVIEW_LAYOUTS
 	if not layouts.has(difficulty_name):

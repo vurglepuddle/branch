@@ -12,6 +12,7 @@ var give_up_animation: bool = true
 # Set by main_menu.gd before scene change; read and cleared by grid.gd on load.
 var pending_puzzle_data: Dictionary = {}
 var pending_puzzle_is_toroidal: bool = false
+var return_from_game: bool = false
 
 const SETTINGS_PATH := "user://settings.cfg"
 

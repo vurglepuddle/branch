@@ -23,7 +23,7 @@ script = ExtResource("1_xlwsn")
 z_index = 101
 custom_minimum_size = Vector2(504, 1090)
 layout_mode = 0
-offset_left = 21.0
+offset_left = 22.0
 offset_top = 33.0
 offset_right = 525.0
 offset_bottom = 1130.0
@@ -137,9 +137,42 @@ scroll_active = false
 autowrap_mode = 0
 tab_size = 1
 
+[node name="SwipeHintLeft" type="RichTextLabel" parent="."]
+unique_name_in_owner = true
+z_index = 112
+clip_contents = false
+layout_mode = 0
+offset_left = 191.0
+offset_top = 1173.0
+offset_right = 229.0
+offset_bottom = 1219.0
+theme = ExtResource("5_m1wwi")
+theme_override_font_sizes/normal_font_size = 38
+bbcode_enabled = true
+text = "[color=#54fcfc]<[/color]"
+fit_content = true
+scroll_active = false
+autowrap_mode = 0
+
+[node name="SwipeHintRight" type="RichTextLabel" parent="."]
+unique_name_in_owner = true
+z_index = 112
+clip_contents = false
+layout_mode = 0
+offset_left = 337.0
+offset_top = 1173.0
+offset_right = 375.0
+offset_bottom = 1219.0
+theme = ExtResource("5_m1wwi")
+theme_override_font_sizes/normal_font_size = 38
+bbcode_enabled = true
+text = "[color=#54fcfc]>[/color]"
+fit_content = true
+scroll_active = false
+autowrap_mode = 0
+
 [node name="Grid2" type="Sprite2D" parent="."]
-position = Vector2(272.5, 611)
-scale = Vector2(0.998016, 1)
+position = Vector2(274, 611)
 texture = ExtResource("3_8srqj")
 
 [node name="PanelBg_mainmenu" type="ColorRect" parent="."]
@@ -148,34 +181,25 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 17.0
+offset_left = 18.0
 offset_top = 1122.0
-offset_right = -17.0
+offset_right = -15.0
 offset_bottom = 16.0
 grow_horizontal = 2
 grow_vertical = 2
 color = Color(0, 0, 0.658824, 1)
 
-[node name="ColorRect" type="ColorRect" parent="."]
-visible = false
-layout_mode = 0
-offset_left = 18.0
-offset_top = 1122.0
-offset_right = 528.0
-offset_bottom = 1238.0
-color = Color(0, 0, 0.658824, 1)
-
 [node name="ColorRect2" type="ColorRect" parent="."]
 z_index = -99
 layout_mode = 0
-offset_left = 17.0
+offset_left = 18.0
 offset_top = 30.0
-offset_right = 528.0
+offset_right = 530.0
 offset_bottom = 1254.0
 color = Color(0, 0, 0.658824, 1)
 
 [node name="Bg" type="Sprite2D" parent="."]
 z_index = -100
-position = Vector2(275.5, 608)
+position = Vector2(277.5, 608)
 scale = Vector2(0.299191, 0.29911)
 texture = ExtResource("7_mg7qi")
