@@ -150,6 +150,83 @@ func degrade_to_three_connections(four_conn_array: Array) -> Array:
 		three_conn_array[actual_dir_to_remove] = 0
 	return three_conn_array
 
+func get_active_tile_count(puzzle_data: Dictionary) -> int:
+	var count: int = 0
+	var branch_grid: Array = puzzle_data.get("branches", [])
+	for x in range(branch_grid.size()):
+		for y in range(branch_grid[x].size()):
+			var branch = branch_grid[x][y]
+			if branch != null and branch.branch_type != BranchType.EMPTY:
+				count += 1
+	return count
+
+func is_puzzle_initially_solved(puzzle_data: Dictionary) -> bool:
+	var branch_grid: Array = puzzle_data.get("branches", [])
+	var active_count: int = 0
+	for x in range(branch_grid.size()):
+		for y in range(branch_grid[x].size()):
+			var branch = branch_grid[x][y]
+			if branch == null or branch.branch_type == BranchType.EMPTY:
+				continue
+			active_count += 1
+			if branch.connections != _get_solution_connections(branch):
+				return false
+	return active_count > 0
+
+func ensure_puzzle_not_initially_solved(puzzle_data: Dictionary) -> void:
+	if not is_puzzle_initially_solved(puzzle_data):
+		return
+
+	var branch_grid: Array = puzzle_data.get("branches", [])
+	var source_x: int = int(puzzle_data.get("source_x", -1))
+	var source_y: int = int(puzzle_data.get("source_y", -1))
+	var fallback_branch = null
+
+	for x in range(branch_grid.size()):
+		for y in range(branch_grid[x].size()):
+			var branch = branch_grid[x][y]
+			if branch == null or branch.branch_type == BranchType.EMPTY:
+				continue
+			if fallback_branch == null:
+				fallback_branch = branch
+			if x != source_x or y != source_y:
+				_rotate_branch_once(branch)
+				return
+
+	if fallback_branch != null:
+		_rotate_branch_once(fallback_branch)
+
+func free_puzzle_nodes(puzzle_data: Dictionary) -> void:
+	var branch_grid: Array = puzzle_data.get("branches", [])
+	for x in range(branch_grid.size()):
+		for y in range(branch_grid[x].size()):
+			var branch = branch_grid[x][y]
+			if branch != null and is_instance_valid(branch) and not branch.is_inside_tree():
+				branch.free()
+
+func _get_solution_connections(branch) -> Array:
+	var solution_connections: Array
+	match branch.branch_type:
+		BranchType.TERMINAL:
+			solution_connections = [1, 0, 0, 0]
+		BranchType.STRAIGHT:
+			solution_connections = [1, 0, 1, 0]
+		BranchType.BEND:
+			solution_connections = [1, 1, 0, 0]
+		BranchType.THREE:
+			solution_connections = [1, 1, 1, 0]
+		_:
+			return [0, 0, 0, 0]
+
+	for _i in range(branch.solution_rotation_index):
+		solution_connections = branch.rotate_connections(solution_connections)
+	return solution_connections
+
+func _rotate_branch_once(branch) -> void:
+	branch.rotation_index = (branch.rotation_index + 1) % 4
+	branch.connections = branch.rotate_connections(branch.connections)
+	branch.update_texture()
+
 func generate_solvable_puzzle(grid_width: int, grid_height: int, branch_scene: PackedScene,
 							  prim_initial_density_factor: float = 0.85,
 							  prim_min_target_tiles: int = 10,
