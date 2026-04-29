@@ -4,16 +4,19 @@ signal music_display_changed(display_name: String)
 
 @export var modern_beep_sound: AudioStream = preload("res://audio/modern/SFX_modern.wav")
 @export var beep_sound: AudioStream = preload("res://audio/other/beep_sound.wav")
+@export var button_sound: AudioStream = preload("res://audio/beep/button.ogg")
+@export var modern_button_sound: AudioStream = preload("res://audio/beep/tietra_ui_settings.wav")
 @export var switch_to_off_sfx: AudioStream
 @export var star_appearance_sound: AudioStream = preload("res://audio/Star.wav")
+@export var star_twinkle_sound: AudioStream = preload("res://audio/beep/star_twinkle.ogg")
 
 @export var difficulty_music: Dictionary = {
-	"baby": "res://audio/other/opening.mp3",
-	"intern": "res://audio/other/opening.mp3",
-	"profi": "res://audio/other/opening.mp3",
-	"master": "res://audio/other/opening.mp3",
-	"expert": "res://audio/other/opening.mp3",
-	"torrero": "res://audio/other/BWV784 Courante.mp3"
+	"baby": "res://audio/midi/BABY.ogg",
+	"intern": "res://audio/midi/INTERN.ogg",
+	"profi": "res://audio/midi/PROFI.ogg",
+	"master": "res://audio/midi/MASTER.ogg",
+	"expert": "res://audio/midi/EXPERT.ogg",
+	"torrero": "res://audio/midi/TORERO.ogg"
 }
 
 @export var difficulty_music_modern: Dictionary = {
@@ -27,6 +30,8 @@ signal music_display_changed(display_name: String)
 
 @export var classic_menu_theme: AudioStream
 @export var modern_menu_theme: AudioStream
+@export var classic_victory_theme: AudioStream = preload("res://audio/midi/FLOWER.ogg")
+@export var modern_victory_theme: AudioStream = preload("res://audio/modern/modernA.mp3")
 
 # --- Audio Players ---
 var sfx_player: AudioStreamPlayer
@@ -48,6 +53,8 @@ const MUSIC_TARGET_VOLUME_DB: float = -10.0
 const MUSIC_MUTED_VOLUME_DB: float = -80.0 # Effectively silent
 const MUSIC_FADE_DURATION: float = 1.0 # Default fade duration
 const DEFAULT_SFX_VOLUME_DB: float = 0.0
+const MODERN_BUTTON_VOLUME_DB: float = -10.0
+const STAR_TWINKLE_VOLUME_DB: float = -4.0
 const INITIAL_MUSIC_FADE_IN_DURATION: float = 1.5
 
 func _ready():
@@ -117,13 +124,14 @@ func toggle_sfx_enabled():
 	GlobalSettings.sfx_enabled = sfx_enabled
 	GlobalSettings.save_settings()
 	if sfx_enabled:
-		play_named_sfx("beep_sound")
+		play_named_sfx("button_sound")
 
 func play_named_sfx(sfx_key: String, volume_db: float = DEFAULT_SFX_VOLUME_DB):
 	if not sfx_enabled or not is_instance_valid(sfx_player):
 		return
 
 	var stream_to_play: AudioStream
+	var final_volume_db: float = volume_db
 	match sfx_key:
 		"beep_sound": 
 			if is_menu_music_off: 
@@ -132,6 +140,13 @@ func play_named_sfx(sfx_key: String, volume_db: float = DEFAULT_SFX_VOLUME_DB):
 				stream_to_play = beep_sound
 			else: 
 				stream_to_play = modern_beep_sound
+
+		"button_sound":
+			if not is_menu_music_off and current_music_style == MusicStyle.CLASSIC:
+				stream_to_play = button_sound
+			else:
+				stream_to_play = modern_button_sound
+				final_volume_db = MODERN_BUTTON_VOLUME_DB
 		
 		"switch_to_off_sfx": 
 			stream_to_play = switch_to_off_sfx
@@ -153,8 +168,9 @@ func play_named_sfx(sfx_key: String, volume_db: float = DEFAULT_SFX_VOLUME_DB):
 				return
 	   
 	if stream_to_play:
+		sfx_player.pitch_scale = 1.0
 		sfx_player.stream = stream_to_play
-		sfx_player.volume_db = volume_db 
+		sfx_player.volume_db = final_volume_db
 		sfx_player.play()
 	else:
 		var problem_stream_name = ""
@@ -165,6 +181,8 @@ func play_named_sfx(sfx_key: String, volume_db: float = DEFAULT_SFX_VOLUME_DB):
 				problem_stream_name = "classic 'beep_sound'"
 			else: 
 				problem_stream_name = "'modern_beep_sound'"
+		elif sfx_key == "button_sound":
+			problem_stream_name = "'button_sound' or 'modern_button_sound'"
 		elif sfx_key == "switch_to_off_sfx":
 			problem_stream_name = "'switch_to_off_sfx'"
 		else: 
@@ -172,19 +190,19 @@ func play_named_sfx(sfx_key: String, volume_db: float = DEFAULT_SFX_VOLUME_DB):
 
 		printerr("AudioManager: SFX stream for %s is null. Please assign it in the Inspector." % problem_stream_name)
 
-# Function specifically for the star appearance sound
-func play_star_sound():
-	# If you want this sound to ignore the sfx_enabled toggle, remove "not sfx_enabled or"
+func play_star_twinkle_sound(y: float, viewport_height: float) -> void:
 	if not sfx_enabled or not is_instance_valid(sfx_player):
 		return
 
-	if star_appearance_sound:
-		# Using the main sfx_player. If you created star_beep_player, use that instead.
-		sfx_player.stream = star_appearance_sound 
-		sfx_player.volume_db = DEFAULT_SFX_VOLUME_DB # Or a custom volume for this sound
+	if star_twinkle_sound:
+		var normalized_y: float = clamp(y / maxf(viewport_height, 1.0), 0.0, 1.0)
+		var semitones: float = randf_range(-5.0, 9.0) + normalized_y * 4.0
+		sfx_player.pitch_scale = pow(2.0, semitones / 12.0)
+		sfx_player.stream = star_twinkle_sound
+		sfx_player.volume_db = STAR_TWINKLE_VOLUME_DB
 		sfx_player.play()
 	else:
-		printerr("AudioManager: Star appearance sound (star_appearance_sound) is not assigned in the Inspector!")
+		printerr("AudioManager: Star twinkle sound is not assigned.")
 
 
 # Kept for compatibility if you used play_sfx() elsewhere for default beep
@@ -215,7 +233,6 @@ func play_beep_pitched(y: int, _grid_height: int):
 
 func toggle_music_style_and_state():
 	var display_name: String
-	var sfx_key_for_this_action: String = "beep_sound"
 
 	if not is_menu_music_off:
 		if current_music_style == MusicStyle.CLASSIC:
@@ -224,7 +241,6 @@ func toggle_music_style_and_state():
 		elif current_music_style == MusicStyle.MODERN:
 			is_menu_music_off = true
 			display_name = "Off"
-			sfx_key_for_this_action = "switch_to_off_sfx"
 	else: 
 		is_menu_music_off = false
 		current_music_style = MusicStyle.CLASSIC 
@@ -233,7 +249,7 @@ func toggle_music_style_and_state():
 	emit_signal("music_display_changed", display_name)
 	GlobalSettings.music_style = "off" if is_menu_music_off else ("classic" if current_music_style == MusicStyle.CLASSIC else "modern")
 	GlobalSettings.save_settings()
-	play_named_sfx(sfx_key_for_this_action)
+	play_named_sfx("button_sound")
 	_update_menu_music_on_state_change()
 
 func _update_menu_music_on_state_change(fade_in: bool = true, duration: float = MUSIC_FADE_DURATION):
@@ -246,9 +262,12 @@ func _update_menu_music_on_state_change(fade_in: bool = true, duration: float = 
 	if not is_menu_music_off:
 		if current_music_style == MusicStyle.CLASSIC:
 			new_track_stream = classic_menu_theme
-		else: 
+		else:
 			new_track_stream = modern_menu_theme
 	_load_and_set_music_track_from_stream(new_track_stream, fade_in, true, duration) 
+
+func play_menu_music(fade_in: bool = true, duration: float = MUSIC_FADE_DURATION) -> void:
+	_update_menu_music_on_state_change(fade_in, duration)
 
 
 func play_difficulty_music(difficulty_key: String, loop: bool = true, fade: bool = true, duration: float = MUSIC_FADE_DURATION):
@@ -269,6 +288,16 @@ func play_difficulty_music(difficulty_key: String, loop: bool = true, fade: bool
 
 	var music_path_to_load: String = music_lib[difficulty_key]
 	_load_and_set_music_track_from_path(music_path_to_load, fade, loop, duration)
+
+func play_victory_music(loop: bool = true, fade: bool = true, duration: float = MUSIC_FADE_DURATION) -> void:
+	if is_menu_music_off or music_globally_muted:
+		_load_and_set_music_track_from_stream(null, false, loop, duration)
+		return
+
+	var victory_stream: AudioStream = classic_victory_theme
+	if current_music_style == MusicStyle.MODERN:
+		victory_stream = modern_victory_theme
+	_load_and_set_music_track_from_stream(victory_stream, fade, loop, duration)
 
 func _load_and_set_music_track_from_stream(track_stream: AudioStream, fade_in: bool = true, loop: bool = true, duration: float = MUSIC_FADE_DURATION):
 	if music_change_pending and fade_in:

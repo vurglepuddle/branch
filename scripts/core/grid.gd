@@ -469,6 +469,8 @@ func check_win_condition():
 	if self.all_connected: # Check class-level variable
 		is_level_complete_animation_playing = true # Set flag
 		print("🎉 CONGRATULATIONS! 🎉")
+		if AudioManager:
+			AudioManager.play_victory_music()
 		call_deferred("start_leaf_spawn_sequence")
 		call_deferred("start_blossom_sequence")
 
