@@ -73,6 +73,8 @@ func _ready():
 
 func _initialize_post_audio_manager_ready():
 	_update_difficulty_preview()
+	if AudioManager:
+		AudioManager.play_menu_music()
 
 	if GlobalSettings.return_from_game:
 		GlobalSettings.return_from_game = false
@@ -114,7 +116,7 @@ func _cycle_difficulty(direction: int) -> void:
 		GlobalSettings.last_menu_difficulty_index = current_difficulty_index
 		GlobalSettings.save_settings()
 	if AudioManager:
-		AudioManager.play_named_sfx("beep_sound")
+		AudioManager.play_named_sfx("button_sound")
 	_update_difficulty_preview()
 
 func _update_difficulty_preview():
@@ -177,14 +179,14 @@ func _animate_swipe_hints() -> void:
 		await t2.finished
 
 func _on_settings_button_pressed():
-	if AudioManager: AudioManager.play_named_sfx("beep_sound")
+	if AudioManager: AudioManager.play_named_sfx("button_sound")
 	_settings_overlay.open()
 
 func _on_start_button_pressed() -> void:
 	if _transitioning:
 		return
 	if AudioManager:
-		AudioManager.play_named_sfx("beep_sound")
+		AudioManager.play_named_sfx("button_sound")
 	_start_transition()
 
 func _start_transition() -> void:

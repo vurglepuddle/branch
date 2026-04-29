@@ -1,5 +1,8 @@
 extends Node
 
+const POINTER_CURSOR: Texture2D = preload("res://sprites/pointer.png")
+const POINTER_HOTSPOT: Vector2 = Vector2.ZERO
+
 var current_difficulty: String = "baby"
 var last_menu_difficulty_index: int = 0
 
@@ -18,6 +21,11 @@ const SETTINGS_PATH := "user://settings.cfg"
 
 func _ready() -> void:
 	load_settings()
+	_apply_custom_cursor()
+
+func _apply_custom_cursor() -> void:
+	Input.set_custom_mouse_cursor(POINTER_CURSOR, Input.CURSOR_ARROW, POINTER_HOTSPOT)
+	Input.set_custom_mouse_cursor(POINTER_CURSOR, Input.CURSOR_POINTING_HAND, POINTER_HOTSPOT)
 
 func save_settings() -> void:
 	var cfg := ConfigFile.new()

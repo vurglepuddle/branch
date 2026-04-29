@@ -91,8 +91,7 @@ func spawn_star():
 	star_instance.connect("animation_cycle_finished", Callable(self, "_on_star_animation_cycle_finished"))
 	
 	active_stars += 1
-	
-	# AudioManager.play_star_sound() # Star sound is currently muted
+	AudioManager.play_star_twinkle_sound(star_instance.position.y, get_viewport_rect().size.y)
 
 func _on_star_animation_cycle_finished():
 	active_stars = max(0, active_stars - 1)

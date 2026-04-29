@@ -131,9 +131,11 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 
 func _on_give_up_pressed() -> void:
+	if AudioManager:
+		AudioManager.play_named_sfx("button_sound")
 	give_up_requested.emit()
 
 func _on_settings_button_pressed() -> void:
 	if AudioManager:
-		AudioManager.play_named_sfx("beep_sound")
+		AudioManager.play_named_sfx("button_sound")
 	_settings_overlay.open()

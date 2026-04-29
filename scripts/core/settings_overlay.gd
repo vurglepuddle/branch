@@ -89,17 +89,20 @@ func _on_sfx_toggle() -> void:
 	sfx_value_label.bbcode_text = _fmt(_sfx_value_text())
 
 func _on_graphics_toggle() -> void:
+	_play_button_sound()
 	GlobalSettings.graphics_old = !GlobalSettings.graphics_old
 	GlobalSettings.save_settings()
 	graphics_value_label.bbcode_text = _fmt(_graphics_value_text())
 
 func _on_language_toggle() -> void:
+	_play_button_sound()
 	GlobalSettings.language = "ru" if GlobalSettings.language == "en" else "en"
 	GlobalSettings.save_settings()
 	_refresh_labels()
 	language_changed.emit()
 
 func _on_solve_anim_toggle() -> void:
+	_play_button_sound()
 	GlobalSettings.give_up_animation = !GlobalSettings.give_up_animation
 	GlobalSettings.save_settings()
 	solve_anim_value_label.bbcode_text = _fmt(_solve_anim_value_text())
@@ -109,11 +112,18 @@ func _input(event: InputEvent) -> void:
 		return
 	if event is InputEventMouseButton or event is InputEventScreenTouch:
 		if event.pressed and not $Panel.get_global_rect().has_point(event.position):
+			_play_button_sound()
 			close()
 			get_viewport().set_input_as_handled()
 
 func _on_close_label_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		_play_button_sound()
 		close()
 	elif event is InputEventScreenTouch and event.pressed:
+		_play_button_sound()
 		close()
+
+func _play_button_sound() -> void:
+	if AudioManager:
+		AudioManager.play_named_sfx("button_sound")
