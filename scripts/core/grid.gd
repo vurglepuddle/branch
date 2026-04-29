@@ -635,14 +635,14 @@ func _load_from_pending_puzzle() -> void:
 	defer_propagation(source_tile, is_toroidal_grid)
 
 func _on_give_up_requested() -> void:
-	if not GlobalSettings.give_up_animation:
-		_exit_to_main_menu()
-		return
 	_game_hud.hide_panel()
 	_game_hud.locked = true
 	is_level_complete_animation_playing = true
 	level_won_waiting_for_exit_input = false
 	await get_tree().create_timer(0.28).timeout  # wait for panel to slide down
+	if not GlobalSettings.give_up_animation:
+		_exit_to_main_menu()
+		return
 	_run_solve_animation()
 
 func _get_solve_order() -> Array:
@@ -707,14 +707,29 @@ func _exit_to_main_menu() -> void:
 	level_won_waiting_for_exit_input = false
 	is_level_complete_animation_playing = true
 
+	var fake_board := Sprite2D.new()
+	fake_board.texture = preload("res://sprites/branches/grid2.png")
+	fake_board.centered = false
+	fake_board.z_index = -7
+	add_child(fake_board)
+
 	var canvas := CanvasLayer.new()
 	canvas.layer = 3
 	add_child(canvas)
 
+	var handoff_board := Sprite2D.new()
+	handoff_board.texture = preload("res://sprites/branches/grid2.png")
+	handoff_board.centered = false
+	handoff_board.position = position
+	handoff_board.z_index = 102
+	handoff_board.visible = false
+	canvas.add_child(handoff_board)
+
 	var fake_panel := ColorRect.new()
 	fake_panel.color = Color(0, 0, 0.658824, 1)
-	fake_panel.size = Vector2(511, 116)
-	fake_panel.position = Vector2(17.0, 1538.0)
+	fake_panel.size = Vector2(505, 116)
+	fake_panel.position = Vector2(21.0, 1538.0)
+	fake_panel.z_index = 300
 	canvas.add_child(fake_panel)
 
 	var diff: String = current_difficulty_str
@@ -750,6 +765,7 @@ func _exit_to_main_menu() -> void:
 			var info: Dictionary = preview_map[pos]
 			var node: Node2D = branch_preview_scene.instantiate()
 			node.position = screen_pos
+			node.z_index = 200
 			canvas.add_child(node)
 			node.set_tile_visuals(info["tile_type_enum"], info["rot_idx"],
 								  info.get("state", "alive"))
@@ -765,6 +781,9 @@ func _exit_to_main_menu() -> void:
 
 		if i < total - 1:
 			await get_tree().create_timer(0.01).timeout
+
+	handoff_board.visible = true
+	await get_tree().process_frame
 
 	GlobalSettings.return_from_game = true
 	var menu: Node = load("res://scenes/main_menu.tscn").instantiate()

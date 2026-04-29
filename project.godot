@@ -30,6 +30,8 @@ Locale="*res://scripts/core/locale.gd"
 
 window/size/viewport_width=545
 window/size/viewport_height=1222
+window/size/window_width_override=450
+window/size/window_height_override=1008
 window/stretch/mode="canvas_items"
 window/handheld/orientation=1
 
