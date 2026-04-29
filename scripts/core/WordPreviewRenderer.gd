@@ -15,6 +15,8 @@ const BranchType = preload("res://scripts/core/branch_types.gd").BranchType
 var _tile_map: Dictionary = {}
 
 func _ready():
+	transparent_bg = false
+
 	if not tile_container:
 		printerr("WordPreviewRenderer: Node2D child named 'TileContainer' is missing!")
 		return
