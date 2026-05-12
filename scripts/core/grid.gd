@@ -117,6 +117,8 @@ func load_level_for_current_difficulty():
 	source_tile = null # Reset source tile
 	self.all_connected = false
 	is_level_complete_animation_playing = false
+	if is_instance_valid(_game_hud):
+		_game_hud.locked = false
 	print("Old branches cleared and state reset.")
 
 	var valid_cells: Dictionary = DifficultyLayouts.get_valid_cells(self.current_difficulty_str)
@@ -468,6 +470,9 @@ func check_win_condition():
 	
 	if self.all_connected: # Check class-level variable
 		is_level_complete_animation_playing = true # Set flag
+		if is_instance_valid(_game_hud):
+			_game_hud.hide_panel()
+			_game_hud.locked = true
 		print("🎉 CONGRATULATIONS! 🎉")
 		if AudioManager:
 			AudioManager.play_victory_music()
@@ -487,6 +492,7 @@ func start_blossom_sequence():
 		# Proceed to next level or level complete screen logic here
 		# For example: show_level_complete_screen_after_delay(2.0)
 		is_level_complete_animation_playing = false # Reset flag
+		level_won_waiting_for_exit_input = true
 		return
 	# Shuffle the list to make the order random beyond the first few
 	alive_terminal_branches.shuffle()
@@ -610,6 +616,8 @@ func _load_from_pending_puzzle() -> void:
 	grid_height = 17
 	all_connected = false
 	is_level_complete_animation_playing = false
+	if is_instance_valid(_game_hud):
+		_game_hud.locked = false
 
 	if src_x < 0 or src_x >= grid_width or src_y < 0 or src_y >= grid_height or \
 	   branches[src_x][src_y] == null:
@@ -637,6 +645,8 @@ func _load_from_pending_puzzle() -> void:
 	defer_propagation(source_tile, is_toroidal_grid)
 
 func _on_give_up_requested() -> void:
+	if all_connected or is_level_complete_animation_playing or level_won_waiting_for_exit_input:
+		return
 	_game_hud.hide_panel()
 	_game_hud.locked = true
 	is_level_complete_animation_playing = true

@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/core/audio.gd" id="1_cqi6u"]
 [ext_resource type="AudioStream" uid="uid://c2jtokiy6vsqi" path="res://audio/beep/tietra_ui_piece_collide.wav" id="2_nukic"]
-[ext_resource type="AudioStream" uid="uid://b8bxcfud12m5c" path="res://audio/modern/modernA.mp3" id="2_oaieh"]
+[ext_resource type="AudioStream" uid="uid://du5bm6oovix7r" path="res://audio/modern/TITLE_modern.mp3" id="2_oaieh"]
 [ext_resource type="AudioStream" uid="uid://ckil5jnexe4tf" path="res://audio/midi/TITLE.ogg" id="3_j2jbk"]
 
 [node name="AudioManager" type="Node2D"]
