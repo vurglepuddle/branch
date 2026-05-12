@@ -59,7 +59,7 @@ func _refresh_labels() -> void:
 	_settings_label.bbcode_text = _fmt(Locale.t("settings"))
 
 func _show_panel() -> void:
-	if _animating or _panel_open:
+	if locked or _animating or _panel_open:
 		return
 	_panel_open = true
 	_animating  = true
@@ -83,6 +83,8 @@ func _hide_panel() -> void:
 	tween.chain().tween_callback(func(): _animating = false)
 
 func _toggle_panel() -> void:
+	if locked:
+		return
 	if _panel_open:
 		_hide_panel()
 	else:
@@ -131,11 +133,15 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 
 func _on_give_up_pressed() -> void:
+	if locked:
+		return
 	if AudioManager:
 		AudioManager.play_named_sfx("button_sound")
 	give_up_requested.emit()
 
 func _on_settings_button_pressed() -> void:
+	if locked:
+		return
 	if AudioManager:
 		AudioManager.play_named_sfx("button_sound")
 	_settings_overlay.open()

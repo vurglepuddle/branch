@@ -355,5 +355,5 @@ autowrap_mode = 0
 
 [node name="MenuBg" type="Sprite2D" parent="."]
 z_index = 109
-position = Vector2(273, 680)
+position = Vector2(274, 679)
 texture = ExtResource("5_rcvns")

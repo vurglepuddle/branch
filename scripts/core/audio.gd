@@ -20,18 +20,18 @@ signal music_display_changed(display_name: String)
 }
 
 @export var difficulty_music_modern: Dictionary = {
-	"baby": "res://audio/modern/modernA.mp3",
-	"intern": "res://audio/modern/modernB.mp3",
-	"profi": "res://audio/modern/modernC.mp3",
-	"master": "res://audio/modern/modernA.mp3",
-	"expert": "res://audio/modern/modernB.mp3",
-	"torrero": "res://audio/modern/modernC.mp3"
+	"baby": "res://audio/modern/BABY_modern.mp3",
+	"intern": "res://audio/modern/INTERN_modern.mp3",
+	"profi": "res://audio/modern/PROFI_modern.mp3",
+	"master": "res://audio/modern/MASTER_modern.mp3",
+	"expert": "res://audio/modern/EXPERT_modern.mp3",
+	"torrero": "res://audio/modern/TORERO_modern.mp3"
 }
 
 @export var classic_menu_theme: AudioStream
 @export var modern_menu_theme: AudioStream
 @export var classic_victory_theme: AudioStream = preload("res://audio/midi/FLOWER.ogg")
-@export var modern_victory_theme: AudioStream = preload("res://audio/modern/modernA.mp3")
+@export var modern_victory_theme: AudioStream = preload("res://audio/modern/FLOWER_modern.mp3")
 
 # --- Audio Players ---
 var sfx_player: AudioStreamPlayer
@@ -43,6 +43,7 @@ var sfx_enabled: bool = true
 var music_globally_muted: bool = false # For master music mute (e.g., M key)
 var current_music_path: String = ""
 var music_change_pending: bool = false # Flag to handle rapid changes
+var _music_transition_tween: Tween
 
 enum MusicStyle { CLASSIC, MODERN }
 var current_music_style: MusicStyle = MusicStyle.CLASSIC
@@ -300,18 +301,17 @@ func play_victory_music(loop: bool = true, fade: bool = true, duration: float = 
 	_load_and_set_music_track_from_stream(victory_stream, fade, loop, duration)
 
 func _load_and_set_music_track_from_stream(track_stream: AudioStream, fade_in: bool = true, loop: bool = true, duration: float = MUSIC_FADE_DURATION):
-	if music_change_pending and fade_in:
-		return
-
 	if not is_instance_valid(bg_player):
 		printerr("AudioManager: BackgroundMusicPlayer not valid for _load_and_set_music_track_from_stream.")
 		return
 
+	_cancel_music_transition()
+
 	if bg_player.playing and bg_player.stream != track_stream and fade_in:
 		music_change_pending = true
-		var tween = create_tween()
-		tween.tween_property(bg_player, "volume_db", MUSIC_MUTED_VOLUME_DB, duration / 2.0) 
-		tween.tween_callback(Callable(self, "_play_new_music_stream").bind(track_stream, loop, true, duration)) 
+		_music_transition_tween = create_tween()
+		_music_transition_tween.tween_property(bg_player, "volume_db", MUSIC_MUTED_VOLUME_DB, duration / 2.0)
+		_music_transition_tween.tween_callback(Callable(self, "_play_new_music_stream").bind(track_stream, loop, true, duration))
 	else:
 		_play_new_music_stream(track_stream, loop, fade_in and bg_player.stream != track_stream, duration)
 
@@ -355,8 +355,8 @@ func _play_new_music_stream(track_stream: AudioStream, loop: bool, should_fade_i
 		current_music_path = track_stream.resource_path if track_stream else ""
 
 		if should_fade_in_new_track and not music_globally_muted:
-			var tween = create_tween().set_trans(Tween.TRANS_SINE) 
-			tween.tween_property(bg_player, "volume_db", MUSIC_TARGET_VOLUME_DB, fade_duration)
+			_music_transition_tween = create_tween().set_trans(Tween.TRANS_SINE)
+			_music_transition_tween.tween_property(bg_player, "volume_db", MUSIC_TARGET_VOLUME_DB, fade_duration)
 		elif not music_globally_muted and not should_fade_in_new_track:
 			bg_player.volume_db = MUSIC_TARGET_VOLUME_DB
 
@@ -367,11 +367,17 @@ func _play_new_music_stream(track_stream: AudioStream, loop: bool, should_fade_i
 
 	bg_player.set_meta("loop", loop) 
 
+func _cancel_music_transition() -> void:
+	if is_instance_valid(_music_transition_tween) and _music_transition_tween.is_running():
+		_music_transition_tween.kill()
+	music_change_pending = false
+
 func _fade_music_out(duration: float = MUSIC_FADE_DURATION):
 	if is_instance_valid(bg_player) and bg_player.playing:
-		var tween = create_tween()
-		tween.tween_property(bg_player, "volume_db", MUSIC_MUTED_VOLUME_DB, duration)
-		tween.tween_callback(Callable(bg_player, "stop"))
+		_cancel_music_transition()
+		_music_transition_tween = create_tween()
+		_music_transition_tween.tween_property(bg_player, "volume_db", MUSIC_MUTED_VOLUME_DB, duration)
+		_music_transition_tween.tween_callback(Callable(bg_player, "stop"))
 
 func toggle_global_music_mute():
 	music_globally_muted = !music_globally_muted
