@@ -8,6 +8,20 @@ It's rebuilt from scratch in Godot 4.3 for Android, featuring hand-drawn pixel a
 
 ---
 
+## Screenshots
+
+<video src="screenshots/video_1.mp4" height="600" controls></video>
+
+<table>
+  <tr>
+	<td><img height="400" src="screenshots/screen_1.png"></td>
+	<td><img height="400" src="screenshots/screen_2.png"></td>
+	<td><img height="400" src="screenshots/screen_3.png"></td>
+	<td><img height="400" src="screenshots/screen_4.png"></td>
+  </tr>
+</table>
+
+
 ## What is it?
 
 Vetka is a relaxing tile-rotation puzzle game, similar to Pipe Dream / Pipe Fever. You have a grid of branch-shaped tiles, and your job is to rotate them so every bud on the grid connects back to the root to form one complete tree.
@@ -22,20 +36,9 @@ Tap a tile to rotate it. That's pretty much it.
 
 ## Status
 
-> Version **0.76.1** — core mechanics are complete and working. Scoring and leaderboard are not yet implemented (the original had a top-10 table).
+> Version **0.85.0** — core mechanics are complete and working. Recreated original soundtrack & a modern rendition of it.
 
 ---
-
-## Screenshots
-
-<table>
-  <tr>
-	<td><img width="200" src="https://github.com/user-attachments/assets/8f7e28fc-5247-405b-837e-678e935f25d2" /></td>
-	<td><img width="200" src="https://github.com/user-attachments/assets/c136fefd-cf15-4257-b6c9-78a98a50abca" /></td>
-	<td><img width="200" src="https://github.com/user-attachments/assets/4309e013-0b1c-426d-981e-c14f9c2a3ecd" /></td>
-	<td><img width="200" src="https://github.com/user-attachments/assets/12471b70-6114-4e8d-b24d-e377e465f4c7" /></td>
-  </tr>
-</table>
 
 ---
 
