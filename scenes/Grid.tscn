@@ -1,9 +1,8 @@
-[gd_scene load_steps=7 format=3 uid="uid://bigwhir5r8pmx"]
+[gd_scene load_steps=6 format=3 uid="uid://bigwhir5r8pmx"]
 
 [ext_resource type="Script" path="res://scripts/core/grid.gd" id="1_p3xk4"]
 [ext_resource type="PackedScene" uid="uid://coq63njxe520r" path="res://scenes/Branch.tscn" id="2_uk0hh"]
 [ext_resource type="AudioStream" uid="uid://dx5npcgh34dso" path="res://audio/other/beep_sound.wav" id="3_brclb"]
-[ext_resource type="AudioStream" uid="uid://bbxc0ho8xf6qd" path="res://audio/other/opening.mp3" id="4_6cn65"]
 [ext_resource type="Texture2D" uid="uid://cbtt7uucvtx6s" path="res://sprites/BG2.png" id="5_iap2h"]
 [ext_resource type="Texture2D" uid="uid://ybhgdv6doer8" path="res://sprites/branches/grid2.png" id="6_grid2"]
 
@@ -41,7 +40,6 @@ stream = ExtResource("3_brclb")
 
 [node name="bg_music" type="AudioStreamPlayer2D" parent="."]
 visible = false
-stream = ExtResource("4_6cn65")
 
 [node name="AudioManager" type="Node2D" parent="."]
 visible = false

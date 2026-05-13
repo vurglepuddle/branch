@@ -7,7 +7,6 @@ signal music_display_changed(display_name: String)
 @export var button_sound: AudioStream = preload("res://audio/beep/button.ogg")
 @export var modern_button_sound: AudioStream = preload("res://audio/beep/tietra_ui_settings.wav")
 @export var switch_to_off_sfx: AudioStream
-@export var star_appearance_sound: AudioStream = preload("res://audio/Star.wav")
 @export var star_twinkle_sound: AudioStream = preload("res://audio/beep/star_twinkle.ogg")
 
 @export var difficulty_music: Dictionary = {
