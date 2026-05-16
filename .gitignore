@@ -39,3 +39,7 @@ config.secret.json
 *.zip
 *.ai
 *.pdf
+
+#md cleanup
+*.md
+!README.md
