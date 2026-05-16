@@ -1,3 +1,4 @@
+
 # Vetka 1992
 
 A mobile recreation of **Ветка** (*Branch*, 1992), a Russian DOS abandonware puzzle game.
@@ -10,7 +11,7 @@ It's rebuilt from scratch in Godot 4.3 for Android, featuring hand-drawn pixel a
 
 ## Screenshots
 
-<video src="screenshots/video_1.mp4" height="600" controls></video>
+https://github.com/user-attachments/assets/bb650f16-e72f-4c7e-85d0-774405935840
 
 <table>
   <tr>
