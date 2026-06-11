@@ -143,7 +143,7 @@ signal branch_right_clicked(x: int, y: int)
 
 func _ready():
 	if sprite == null:
-		print("Error: Sprite2D node is missing!")
+		printerr("Error: Sprite2D node is missing!")
 		return
 	#print("Textures dictionary:", textures)
 	sprite.visible = true
@@ -458,7 +458,7 @@ func update_texture():
 	# Ensure rotation_index is valid
 	var textures_for_state = textures[branch_type][state]
 	if rotation_index < 0 or rotation_index >= textures_for_state.size():
-		print("Error: Invalid rotation_index: ", rotation_index, " (max: ", textures_for_state.size()-1, ")")
+		printerr("Error: Invalid rotation_index: ", rotation_index, " (max: ", textures_for_state.size()-1, ")")
 		rotation_index = rotation_index % textures_for_state.size()  # Ensure it's within bounds
 		
 	var texture_path = textures_for_state[rotation_index]

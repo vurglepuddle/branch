@@ -38,7 +38,7 @@ func _ready():
 		ceil(preview_grid_width_in_tiles * cell_pixel_size.x),
 		ceil(preview_grid_height_in_tiles * cell_pixel_size.y)
 	)
-	print("WordPreviewRenderer _ready: Initialized SubViewport size to: ", self.size)
+	print_verbose("WordPreviewRenderer _ready: Initialized SubViewport size to: ", self.size)
 
 
 func clear_preview() -> void:

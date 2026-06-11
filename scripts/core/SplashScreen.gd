@@ -59,7 +59,7 @@ func _unhandled_input(event: InputEvent):
 		return
 
 	if event.is_pressed() and not event.is_echo():
-		print("SplashScreen: Input detected, transitioning to main menu.")
+		print_verbose("SplashScreen: Input detected, transitioning to main menu.")
 		transitioning = true
 		_initial_fade_complete = false # Prevent further input processing during transition
 		set_process_unhandled_input(false) 
@@ -98,12 +98,12 @@ func _on_star_animation_cycle_finished():
 
 func _on_fade_finished(type: String):
 	if type == "in":
-		print("SplashScreen: Fade in complete. Enabling input.")
+		print_verbose("SplashScreen: Fade in complete. Enabling input.")
 		# --- MODIFICATION: Enable input processing only after fade-in is done ---
 		_initial_fade_complete = true
 		set_process_unhandled_input(true) 
 	elif type == "out" and transitioning:
-		print("SplashScreen: _on_fade_finished(out) - Transition managed by SceneChanger.")
+		print_verbose("SplashScreen: _on_fade_finished(out) - Transition managed by SceneChanger.")
 		# SceneChanger handles the actual scene change.
 		# We might not even need this 'elif' block anymore if SplashScreen doesn't do
 		# specific cleanup *after* its own fade_out signal but *before* scene change.
