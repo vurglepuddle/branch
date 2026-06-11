@@ -4,15 +4,8 @@ const BranchType = preload("res://scripts/core/branch_types.gd").BranchType
 const _BranchScene: PackedScene = preload("res://scenes/Branch.tscn")
 const _PuzzleGenerator = preload("res://scripts/core/puzzle_generator.gd")
 
-# Prim density settings mirrored from grid.gd (only what generate_solvable_puzzle needs).
-const _PRIM_SETTINGS: Dictionary = {
-	"baby":    {"factor": 0.75, "min": 7, "final_factor": 0.75, "variation": 0.2, "attempts": 12},
-	"intern":  {"factor": 0.5, "min": 14, "final_factor": 0.5, "variation": 0.1, "attempts": 12},
-	"profi":   {"factor": 0.55, "min": 28, "final_factor": 0.55, "variation": 0.1, "attempts": 14},
-	"master":  {"factor": 0.7, "min": 38, "final_factor": 0.7, "variation": 0.1, "attempts": 10},
-	"expert":  {"factor": 1.0, "min": 85, "final_factor": 0.75, "variation": 0.05, "attempts": 15},
-	"torrero": {"factor": 1.0, "min": 85, "final_factor": 0.86, "variation": 0.05, "attempts": 15},
-}
+# Per-difficulty generation settings — single source of truth shared with grid.gd.
+const _PRIM_SETTINGS: Dictionary = _PuzzleGenerator.DIFFICULTY_SETTINGS
 
 @onready var difficulty_label: RichTextLabel = %DifficultyLabel
 @onready var start_button: TextureButton = %MenuItemsContainer/HBox/StartButton
@@ -49,7 +42,7 @@ func _ready():
 	settings_button.pressed.connect(_on_settings_button_pressed)
 	difficulty_preview_display.visible = false
 	difficulty_preview_display.texture = null
-	print("MainMenu: _ready() - Signals connected.")
+	print_verbose("MainMenu: _ready() - Signals connected.")
 
 	var overlay_scene: PackedScene = preload("res://scenes/SettingsOverlay.tscn")
 	_settings_overlay = overlay_scene.instantiate()
@@ -84,9 +77,9 @@ func _initialize_post_audio_manager_ready():
 		FadeOverlay.fade_rect.color = Color.BLACK
 		FadeOverlay.fade_rect.modulate.a = 1.0
 		FadeOverlay.visible = true
-		print(self.name, ": Fading in scene...")
+		print_verbose(self.name, ": Fading in scene...")
 		await FadeOverlay.fade_in(0.3)
-		print(self.name, ": Scene fade in complete.")
+		print_verbose(self.name, ": Scene fade in complete.")
 	else:
 		printerr("MainMenu: _initialize_post_audio_manager_ready - FadeOverlay NOT FOUND.")
 
@@ -132,13 +125,13 @@ func _update_difficulty_preview():
 		return
 
 	var current_difficulty_name: String = difficulty_levels[current_difficulty_index]
-	print("MainMenu: Updating preview for '", current_difficulty_name, "'")
+	print_verbose("MainMenu: Updating preview for '", current_difficulty_name, "'")
 
 	difficulty_preview_display.visible = false
 	difficulty_preview_display.texture = null
 
 	if not word_preview_renderer.is_node_ready():
-		print("MainMenu: word_preview_renderer not ready yet, awaiting...")
+		print_verbose("MainMenu: word_preview_renderer not ready yet, awaiting...")
 		await word_preview_renderer.ready
 		if generation_id != _preview_generation_id:
 			return
@@ -219,7 +212,7 @@ func _generate_and_store_puzzle() -> void:
 	var s: Dictionary = _PRIM_SETTINGS[diff]
 	var valid_cells: Dictionary = DifficultyLayouts.get_valid_cells(diff)
 	var min_acceptable_tiles: int = _get_min_acceptable_tiles(valid_cells.size(), s)
-	var max_attempts: int = int(s["attempts"])
+	var max_attempts: int = int(s["max_gen_attempts"])
 
 	var generator = _PuzzleGenerator.new()
 	var puzzle_data: Dictionary = {}
@@ -230,7 +223,7 @@ func _generate_and_store_puzzle() -> void:
 		var candidate: Dictionary = generator.generate_solvable_puzzle(
 			6, 17,
 			_BranchScene,
-			s["factor"], s["min"],
+			s["prim_initial_density_factor"], s["prim_min_tiles"],
 			is_toroidal,
 			valid_cells
 		)
@@ -257,7 +250,7 @@ func _generate_and_store_puzzle() -> void:
 		puzzle_data = generator.generate_solvable_puzzle(
 			6, 17,
 			_BranchScene,
-			s["factor"], s["min"],
+			s["prim_initial_density_factor"], s["prim_min_tiles"],
 			is_toroidal,
 			valid_cells
 		)
@@ -267,8 +260,8 @@ func _generate_and_store_puzzle() -> void:
 	GlobalSettings.pending_puzzle_is_toroidal = is_toroidal
 
 func _get_min_acceptable_tiles(num_total_cells: int, settings: Dictionary) -> int:
-	var base_desired_tiles: int = int(floor(num_total_cells * settings["final_factor"]))
-	var variation_amount: int = int(floor(base_desired_tiles * settings["variation"]))
+	var base_desired_tiles: int = int(floor(num_total_cells * settings["final_target_density_factor"]))
+	var variation_amount: int = int(floor(base_desired_tiles * settings["final_density_variation_factor"]))
 	return int(clamp(base_desired_tiles - variation_amount, 1, num_total_cells))
 
 func _slide_menu_down() -> void:

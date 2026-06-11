@@ -16,14 +16,14 @@ func _ready():
 
 func fade_out(duration: float = 0.5): 
 	if _is_fading:
-		print("FadeOverlay: Already fading, ignoring new fade_out request.")
+		print_verbose("FadeOverlay: Already fading, ignoring new fade_out request.")
 		return
 
 	_is_fading = true
 	visible = true 
 	fade_rect.modulate = Color(1, 1, 1, 0) 
 
-	print("FadeOverlay: Starting fade_out visual tween (duration: ", duration, "s).")
+	print_verbose("FadeOverlay: Starting fade_out visual tween (duration: ", duration, "s).")
 	var tween = create_tween()
 	tween.set_parallel(true) 
 	tween.tween_property(fade_rect, "modulate:a", 1.0, duration).set_trans(Tween.TRANS_SINE)
@@ -33,26 +33,26 @@ func fade_out(duration: float = 0.5):
 		time_elapsed += get_process_delta_time()
 		if time_elapsed >= duration * 1.1: # Added a little buffer to ensure tween can finish
 			if is_instance_valid(tween): tween.kill() 
-			print("FadeOverlay: Fade_out safety break after duration.")
+			print_verbose("FadeOverlay: Fade_out safety break after duration.")
 			break
 		await get_tree().process_frame # This makes this function awaitable
 
 	fade_rect.modulate.a = 1.0
 	
-	print("FadeOverlay: Visual fade_out tween considered FINISHED.")
+	print_verbose("FadeOverlay: Visual fade_out tween considered FINISHED.")
 	_is_fading = false
 	emit_signal("fade_finished", "out")
 
 func fade_in(duration: float = 0.5):
 	if _is_fading:
-		print("FadeOverlay: Already fading, ignoring new fade_in request.")
+		print_verbose("FadeOverlay: Already fading, ignoring new fade_in request.")
 		return
 			
 	_is_fading = true
 	visible = true 
 	fade_rect.modulate = Color(1, 1, 1, 1.0) 
 
-	print("FadeOverlay: Starting fade_in visual tween (duration: ", duration, "s).")
+	print_verbose("FadeOverlay: Starting fade_in visual tween (duration: ", duration, "s).")
 	var tween = create_tween()
 	tween.set_parallel(true)
 	tween.tween_property(fade_rect, "modulate:a", 0.0, duration).set_trans(Tween.TRANS_SINE)
@@ -62,14 +62,14 @@ func fade_in(duration: float = 0.5):
 		time_elapsed += get_process_delta_time()
 		if time_elapsed >= duration * 1.1: 
 			if is_instance_valid(tween): tween.kill()
-			print("FadeOverlay: Fade_in safety break after duration.")
+			print_verbose("FadeOverlay: Fade_in safety break after duration.")
 			break
 		await get_tree().process_frame # This makes this function awaitable
 		
 	fade_rect.modulate.a = 0.0
 	visible = false 
 	
-	print("FadeOverlay: Visual fade_in tween considered FINISHED.")
+	print_verbose("FadeOverlay: Visual fade_in tween considered FINISHED.")
 	_is_fading = false
 	emit_signal("fade_finished", "in")
 

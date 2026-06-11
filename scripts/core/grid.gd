@@ -10,20 +10,9 @@ var generator = PuzzleGenerator.new()
 var level_won_waiting_for_exit_input: bool = false
 var is_level_complete_animation_playing: bool = false # Prevent re-triggering
 
-# The size of the grid
-var difficulty_levels = {
-	# "size": [width, height]
-	# "prim_initial_density_factor": Target density for Prim's algorithm (0.0 to 1.0)
-	# "prim_min_tiles": Absolute minimum tiles for Prim's target, useful for small grids
-	# "final_target_density_factor": Desired density AFTER pruning (0.0 to 1.0)
-	# "final_density_variation_factor": +/- variation on final_target_density (0.0 to 1.0 of the target)
-	"baby":   {"size": [6, 17], "prim_initial_density_factor": 0.75, "prim_min_tiles": 7, "final_target_density_factor": 0.75, "final_density_variation_factor": 0.2, "max_gen_attempts": 12},
-	"intern": {"size": [6, 17], "prim_initial_density_factor": 0.5, "prim_min_tiles": 14, "final_target_density_factor": 0.5, "final_density_variation_factor": 0.1, "max_gen_attempts": 12},
-	"profi":  {"size": [6, 17], "prim_initial_density_factor": 0.55, "prim_min_tiles": 28, "final_target_density_factor": 0.55, "final_density_variation_factor": 0.1, "max_gen_attempts": 14},
-	"master": {"size": [6, 17], "prim_initial_density_factor": 0.7, "prim_min_tiles": 38, "final_target_density_factor": 0.7, "final_density_variation_factor": 0.1, "max_gen_attempts": 10},
-	"expert": {"size": [6, 17], "prim_initial_density_factor": 1.0, "prim_min_tiles": 85, "final_target_density_factor": 0.75, "final_density_variation_factor": 0.05, "max_gen_attempts": 15},
-	"torrero":{"size": [6, 17], "prim_initial_density_factor": 1.0, "prim_min_tiles": 85, "final_target_density_factor": 0.86, "final_density_variation_factor": 0.05, "max_gen_attempts": 15}
-}
+# Per-difficulty generation settings — shared with main_menu.gd, single source
+# of truth lives in PuzzleGenerator.DIFFICULTY_SETTINGS.
+var difficulty_levels = PuzzleGenerator.DIFFICULTY_SETTINGS
 
 var difficulty_key_map = {
 	KEY_1: "baby",
@@ -52,7 +41,7 @@ func _ready():
 	_game_hud.give_up_requested.connect(_on_give_up_requested)
 	if GlobalSettings:
 		current_difficulty_str = GlobalSettings.current_difficulty
-		print("Grid: Loaded difficulty from GlobalSettings: " + current_difficulty_str)
+		print_verbose("Grid: Loaded difficulty from GlobalSettings: " + current_difficulty_str)
 	else:
 		current_difficulty_str = "torrero"
 		printerr("Grid: GlobalSettings Autoload not found! Using default difficulty: " + current_difficulty_str)
@@ -68,19 +57,19 @@ func _ready():
 			FadeOverlay.fade_rect.modulate.a = 1.0
 			FadeOverlay.visible = true
 			FadeOverlay.start_fade_in(0.5)
-			print("Grid: Fade-in initiated.")
+			print_verbose("Grid: Fade-in initiated.")
 		else:
 			printerr("Grid: FadeOverlay Autoload not found! Scene will appear abruptly.")
 
 func load_level_for_current_difficulty():
-	print("--- load_level_for_current_difficulty START for: %s ---" % self.current_difficulty_str)
+	print_verbose("--- load_level_for_current_difficulty START for: %s ---" % self.current_difficulty_str)
 
 	if not difficulty_levels.has(self.current_difficulty_str):
 		printerr("Error: Difficulty level '%s' not found!" % self.current_difficulty_str)
 		var difficulty_keys = difficulty_levels.keys()
 		if difficulty_keys.size() > 0:
 			self.current_difficulty_str = difficulty_keys[0]
-			print("Fell back to difficulty: %s" % self.current_difficulty_str)
+			print_verbose("Fell back to difficulty: %s" % self.current_difficulty_str)
 		else:
 			printerr("FATAL: No difficulty levels defined!")
 			return
@@ -90,7 +79,7 @@ func load_level_for_current_difficulty():
 	grid_width = current_difficulty_settings.size[0]
 	grid_height = current_difficulty_settings.size[1]
 	self.is_toroidal_grid = (self.current_difficulty_str == "torrero")
-	print("Grid settings: WxH=%sx%s, Toroidal=%s" % [grid_width, grid_height, self.is_toroidal_grid])
+	print_verbose("Grid settings: WxH=%sx%s, Toroidal=%s" % [grid_width, grid_height, self.is_toroidal_grid])
 	
 	var prim_density_factor = current_difficulty_settings.prim_initial_density_factor
 	var prim_min_tiles = current_difficulty_settings.prim_min_tiles
@@ -98,16 +87,16 @@ func load_level_for_current_difficulty():
 	var final_variation = current_difficulty_settings.final_density_variation_factor
 	var max_gen_attempts_for_level = current_difficulty_settings.max_gen_attempts
 
-	print("Clearing old branches...")
+	print_verbose("Clearing old branches...")
 	var children_to_remove = []
 	for child in get_children():
 		if child is BranchNode: # Assumes branch.gd has class_name BranchNode
 			children_to_remove.append(child)
 			
 	if children_to_remove.size() > 0:
-		print("Found %s BranchNode children to remove." % children_to_remove.size())
+		print_verbose("Found %s BranchNode children to remove." % children_to_remove.size())
 	else:
-		print("No existing BranchNode children found to remove (this is normal on first load).")
+		print_verbose("No existing BranchNode children found to remove (this is normal on first load).")
 		
 	for child_to_remove in children_to_remove:
 		if is_instance_valid(child_to_remove):
@@ -119,36 +108,36 @@ func load_level_for_current_difficulty():
 	is_level_complete_animation_playing = false
 	if is_instance_valid(_game_hud):
 		_game_hud.locked = false
-	print("Old branches cleared and state reset.")
+	print_verbose("Old branches cleared and state reset.")
 
 	var valid_cells: Dictionary = DifficultyLayouts.get_valid_cells(self.current_difficulty_str)
-	print("Calling init_branches...")
+	print_verbose("Calling init_branches...")
 	init_branches(grid_width, grid_height, BranchScene,
 				  prim_density_factor, prim_min_tiles,
 				  final_target_density, final_variation, self.is_toroidal_grid, max_gen_attempts_for_level,
 				  valid_cells)
-	print("init_branches call finished. Current branch count in array: %s" % branches.size())
+	print_verbose("init_branches call finished. Current branch count in array: %s" % branches.size())
 	
 	var actual_branch_children_count = 0
 	for child in get_children():
 		if child is BranchNode:
 			actual_branch_children_count += 1
-	print("Actual BranchNode children in scene tree after init_branches: %s" % actual_branch_children_count)
+	print_verbose("Actual BranchNode children in scene tree after init_branches: %s" % actual_branch_children_count)
 
 	if actual_branch_children_count > 0:
-		print("Calling center_grid...")
+		print_verbose("Calling center_grid...")
 		center_grid()
-		print("center_grid call finished.")
+		print_verbose("center_grid call finished.")
 	else:
-		print("Skipping center_grid as no branches were added to the scene tree.")
+		print_verbose("Skipping center_grid as no branches were added to the scene tree.")
 
 	if AudioManager: # Ensure AudioManager is capitalized correctly if that's its autoload name
 		AudioManager.play_difficulty_music(self.current_difficulty_str)
-		print("AudioManager instructed to play music for %s" % self.current_difficulty_str)
+		print_verbose("AudioManager instructed to play music for %s" % self.current_difficulty_str)
 	else:
 		printerr("AudioManager not found when trying to play music in load_level.")
 		
-	print("--- load_level_for_current_difficulty END for: %s ---" % self.current_difficulty_str)
+	print_verbose("--- load_level_for_current_difficulty END for: %s ---" % self.current_difficulty_str)
 
 
 
@@ -156,13 +145,13 @@ func _input(event: InputEvent):
 	if level_won_waiting_for_exit_input:
 			var should_return_to_menu = false
 			if event is InputEventKey and event.is_pressed() and not event.is_echo():
-				print("Grid: Key pressed after win. Returning to menu.")
+				print_verbose("Grid: Key pressed after win. Returning to menu.")
 				should_return_to_menu = true
 			elif event is InputEventMouseButton and event.is_pressed():
-				print("Grid: Mouse button pressed after win. Returning to menu.")
+				print_verbose("Grid: Mouse button pressed after win. Returning to menu.")
 				should_return_to_menu = true
 			elif event is InputEventScreenTouch and event.is_pressed(): # For touch devices
-				print("Grid: Screen touched after win. Returning to menu.")
+				print_verbose("Grid: Screen touched after win. Returning to menu.")
 				should_return_to_menu = true
 
 			if should_return_to_menu:
@@ -187,7 +176,7 @@ func _input(event: InputEvent):
 			if new_selected_difficulty != current_difficulty_str:
 				current_difficulty_str = new_selected_difficulty
 				difficulty_changed_by_hotkey = true
-				print("Grid: Difficulty changed by hotkey to: " + current_difficulty_str)
+				print_verbose("Grid: Difficulty changed by hotkey to: " + current_difficulty_str)
 				get_viewport().set_input_as_handled() 
 
 	if difficulty_changed_by_hotkey:
@@ -209,7 +198,7 @@ func _process(_delta):
 		#get_viewport().set_input_as_handled()
 		
 	if Input.is_action_just_pressed("ui_accepted"):
-		print("Test triggered for difficulty: %s" % self.current_difficulty_str)
+		print_verbose("Test triggered for difficulty: %s" % self.current_difficulty_str)
 		#run_batch_generation_test(self.current_difficulty_str, 200)
 
 func init_branches(g_width: int, g_height: int, b_scene: PackedScene,
@@ -232,7 +221,7 @@ func init_branches(g_width: int, g_height: int, b_scene: PackedScene,
 	max_acceptable_final_tiles = min(max_acceptable_final_tiles, num_total_cells_on_grid) 
 	min_acceptable_final_tiles = min(min_acceptable_final_tiles, max_acceptable_final_tiles)
 
-	print("Targeting final active tiles: approx %s (min: %s, max: %s)" % [base_desired_final_tiles, min_acceptable_final_tiles, max_acceptable_final_tiles])
+	print_verbose("Targeting final active tiles: approx %s (min: %s, max: %s)" % [base_desired_final_tiles, min_acceptable_final_tiles, max_acceptable_final_tiles])
 	# Removed the next print line as it's now better placed inside the loop or before calling the generator.
 
 	var attempts = 0
@@ -240,7 +229,7 @@ func init_branches(g_width: int, g_height: int, b_scene: PackedScene,
 
 	while attempts < p_max_generation_attempts:
 		attempts += 1
-		print("Generation attempt #%s (Prim's target: density_factor=%s, min_tiles=%s)..." % [attempts, initial_prim_density, min_prim_abs_tiles])
+		print_verbose("Generation attempt #%s (Prim's target: density_factor=%s, min_tiles=%s)..." % [attempts, initial_prim_density, min_prim_abs_tiles])
 		puzzle_data = generator.generate_solvable_puzzle(g_width, g_height, b_scene,
 														 initial_prim_density, min_prim_abs_tiles,
 														 p_is_toroidal, p_valid_cells)
@@ -255,29 +244,29 @@ func init_branches(g_width: int, g_height: int, b_scene: PackedScene,
 			else:
 				break 
 
-		print("Generated puzzle with %s active tiles." % actual_final_active_tile_count)
+		print_verbose("Generated puzzle with %s active tiles." % actual_final_active_tile_count)
 
 		if generator.is_puzzle_initially_solved(puzzle_data):
-			print("Generated puzzle was already solved. Retrying...")
+			print_verbose("Generated puzzle was already solved. Retrying...")
 			if attempts < p_max_generation_attempts:
 				generator.free_puzzle_nodes(puzzle_data)
 				puzzle_data = {}
 				continue
 
 		if actual_final_active_tile_count >= min_acceptable_final_tiles:
-			print("Acceptable density achieved.")
+			print_verbose("Acceptable density achieved.")
 			break 
 		
 		if attempts < p_max_generation_attempts:
-			print("Too sparse (min desired: %s). Retrying..." % min_acceptable_final_tiles)
+			print_verbose("Too sparse (min desired: %s). Retrying..." % min_acceptable_final_tiles)
 			generator.free_puzzle_nodes(puzzle_data)
 			puzzle_data = {}
 			continue
 
 	if actual_final_active_tile_count < min_acceptable_final_tiles:
-		print("Warning: Could not achieve desired minimum density (%s) after %s attempts. Proceeding with %s active tiles." % [min_acceptable_final_tiles, p_max_generation_attempts, actual_final_active_tile_count])
+		print_verbose("Warning: Could not achieve desired minimum density (%s) after %s attempts. Proceeding with %s active tiles." % [min_acceptable_final_tiles, p_max_generation_attempts, actual_final_active_tile_count])
 	if puzzle_data and generator.is_puzzle_initially_solved(puzzle_data):
-		print("Warning: Final generated puzzle was initially solved. Rotating one tile out of solution.")
+		print_verbose("Warning: Final generated puzzle was initially solved. Rotating one tile out of solution.")
 		generator.ensure_puzzle_not_initially_solved(puzzle_data)
 
 	if not puzzle_data or not puzzle_data.has("branches") or not puzzle_data.has("source_x"):
@@ -305,7 +294,7 @@ func init_branches(g_width: int, g_height: int, b_scene: PackedScene,
 		source_tile = branches[0][0]
 		dummy_branch.position = Vector2(0 * 84 + 42, 0 * 68 + 34)
 		add_child(dummy_branch)
-		print("Fallback: Created a 1x1 dummy puzzle.")
+		print_verbose("Fallback: Created a 1x1 dummy puzzle.")
 		# defer_propagation(source_tile) # Might not be needed or could error if grid size changed drastically
 		return 
 
@@ -320,7 +309,7 @@ func init_branches(g_width: int, g_height: int, b_scene: PackedScene,
 		return
 		
 	source_tile = branches[source_x][source_y]
-	print("Source Tile is at: (", source_x, ", ", source_y, ")")
+	print_verbose("Source Tile is at: (", source_x, ", ", source_y, ")")
 	
 	# Clear previous children (Branches) before adding new ones
 	var children_to_remove_init = []
@@ -422,13 +411,13 @@ func _on_branch_clicked(x: int, y: int):
 
 func _on_branch_right_clicked(x: int, y: int):
 	var clicked_branch = branches[x][y]
-	print("--- Debug Info for Tile at (", x, ", ", y, ") ---")
-	print("Connections (UP, RIGHT, DOWN, LEFT): ", clicked_branch.get_connections())
-	print("Rotation Index: ", clicked_branch.rotation_index)
-	print("State: ", clicked_branch.state)
-	print("Connected to Source: ", clicked_branch.connected_to_source)
-	print("Is Toroidal Grid: ", self.is_toroidal_grid)
-	print("--------------------------------------------")
+	print_verbose("--- Debug Info for Tile at (", x, ", ", y, ") ---")
+	print_verbose("Connections (UP, RIGHT, DOWN, LEFT): ", clicked_branch.get_connections())
+	print_verbose("Rotation Index: ", clicked_branch.rotation_index)
+	print_verbose("State: ", clicked_branch.state)
+	print_verbose("Connected to Source: ", clicked_branch.connected_to_source)
+	print_verbose("Is Toroidal Grid: ", self.is_toroidal_grid)
+	print_verbose("--------------------------------------------")
 
 
 func defer_propagation(source_tile, p_is_toroidal: bool):
@@ -473,7 +462,7 @@ func check_win_condition():
 		if is_instance_valid(_game_hud):
 			_game_hud.hide_panel()
 			_game_hud.locked = true
-		print("🎉 CONGRATULATIONS! 🎉")
+		print_verbose("🎉 CONGRATULATIONS! 🎉")
 		if AudioManager:
 			AudioManager.play_victory_music()
 		call_deferred("start_leaf_spawn_sequence")
@@ -488,7 +477,7 @@ func start_blossom_sequence():
 				alive_terminal_branches.append(branch)
 
 	if alive_terminal_branches.size() == 0:
-		print("No alive terminal branches found to animate.")
+		print_verbose("No alive terminal branches found to animate.")
 		# Proceed to next level or level complete screen logic here
 		# For example: show_level_complete_screen_after_delay(2.0)
 		is_level_complete_animation_playing = false # Reset flag
@@ -548,11 +537,11 @@ func _play_single_blossom(branch: BranchNode, timer_node: Timer):
 		timer_node.queue_free() # Clean up the timer
 
 func _finish_level_complete_sequence(timer_node: Timer):
-	print("Level complete animation sequence finished.")
+	print_verbose("Level complete animation sequence finished.")
 	is_level_complete_animation_playing = false # Reset this flag as animations are done
 	
 	level_won_waiting_for_exit_input = true
-	print("Grid: Now waiting for input to return to menu.")
+	print_verbose("Grid: Now waiting for input to return to menu.")
 
 	if is_instance_valid(timer_node):
 		timer_node.queue_free()
@@ -567,7 +556,7 @@ func start_leaf_spawn_sequence():
 				eligible_leaf_branches.append(branch)
 
 	if eligible_leaf_branches.is_empty():
-		print("No eligible branches found for leaf spawning.")
+		print_verbose("No eligible branches found for leaf spawning.")
 		return
 
 	eligible_leaf_branches.shuffle()
@@ -596,7 +585,7 @@ func start_leaf_spawn_sequence():
 		if leaf_delay_accumulator > 5.0: # e.g., don't let leaf sequence drag on too long
 			pass # Or break, or stop incrementing leaf_delay_accumulator
 
-	print("Leaf spawn sequence initiated for %s branches." % eligible_leaf_branches.size())
+	print_verbose("Leaf spawn sequence initiated for %s branches." % eligible_leaf_branches.size())
 
 
 func _spawn_single_leaf(branch: BranchNode, timer_node: Timer):

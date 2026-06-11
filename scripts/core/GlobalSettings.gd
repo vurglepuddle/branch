@@ -41,8 +41,12 @@ func load_settings() -> void:
 	var cfg := ConfigFile.new()
 	if cfg.load(SETTINGS_PATH) != OK:
 		return
-	last_menu_difficulty_index = cfg.get_value("game", "difficulty_index", 0)
-	current_difficulty = ["baby", "intern", "profi", "master", "expert", "torrero"][last_menu_difficulty_index]
+	var difficulties := ["baby", "intern", "profi", "master", "expert", "torrero"]
+	var saved_index = cfg.get_value("game", "difficulty_index", 0)
+	if not (saved_index is int) or saved_index < 0 or saved_index >= difficulties.size():
+		saved_index = 0
+	last_menu_difficulty_index = saved_index
+	current_difficulty = difficulties[last_menu_difficulty_index]
 	music_style = cfg.get_value("audio", "music_style", "classic")
 	sfx_enabled = cfg.get_value("audio", "sfx_enabled", true)
 	graphics_old = cfg.get_value("graphics", "old", false)
