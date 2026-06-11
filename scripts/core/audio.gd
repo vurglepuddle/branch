@@ -80,7 +80,7 @@ func setup_audio_players():
 	# 	add_child(star_beep_player)
 
 func initialize_audio_settings():
-	print("AudioManager initialize_audio_settings: START")
+	print_verbose("AudioManager initialize_audio_settings: START")
 	sfx_enabled = GlobalSettings.sfx_enabled
 	match GlobalSettings.music_style:
 		"classic":
@@ -112,15 +112,15 @@ func _on_music_track_finished():
 		if is_instance_valid(bg_player.stream):
 			bg_player.play()
 		else:
-			print("AudioManager: Tried to loop, but stream is invalid.")
+			print_verbose("AudioManager: Tried to loop, but stream is invalid.")
 	else:
-		print("AudioManager: Music track finished (not looping or conditions not met).")
+		print_verbose("AudioManager: Music track finished (not looping or conditions not met).")
 		
 # --- SFX Control ---
 func toggle_sfx_enabled():
 	sfx_enabled = !sfx_enabled
 	sfx_player.volume_db = DEFAULT_SFX_VOLUME_DB if sfx_enabled else MUSIC_MUTED_VOLUME_DB
-	print("AudioManager: SFX " + ("ENABLED" if sfx_enabled else "DISABLED"))
+	print_verbose("AudioManager: SFX " + ("ENABLED" if sfx_enabled else "DISABLED"))
 	GlobalSettings.sfx_enabled = sfx_enabled
 	GlobalSettings.save_settings()
 	if sfx_enabled:
@@ -383,13 +383,13 @@ func toggle_global_music_mute():
 	if is_instance_valid(bg_player):
 		if music_globally_muted:
 			bg_player.stream_paused = true
-			print("AudioManager: Music GLOBALLY MUTED")
+			print_verbose("AudioManager: Music GLOBALLY MUTED")
 		else:
 			bg_player.stream_paused = false
 			if not (is_menu_music_off and bg_player.stream in [classic_menu_theme, modern_menu_theme]):
 				if bg_player.playing and bg_player.stream != null: 
 					bg_player.volume_db = MUSIC_TARGET_VOLUME_DB
-			print("AudioManager: Music GLOBALLY UNMUTED")
+			print_verbose("AudioManager: Music GLOBALLY UNMUTED")
 	if not music_globally_muted:
 		_update_menu_music_on_state_change(false)
 

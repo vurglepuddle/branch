@@ -3,6 +3,22 @@ extends Node
 
 const BranchType = preload("res://scripts/core/branch_types.gd").BranchType
 
+# Single source of truth for per-difficulty generation settings.
+# Used by grid.gd (fallback generation) and main_menu.gd (pre-generation).
+# "size": [width, height]
+# "prim_initial_density_factor": Target density for Prim's algorithm (0.0 to 1.0)
+# "prim_min_tiles": Absolute minimum tiles for Prim's target, useful for small grids
+# "final_target_density_factor": Desired density AFTER pruning (0.0 to 1.0)
+# "final_density_variation_factor": +/- variation on final_target_density (0.0 to 1.0 of the target)
+const DIFFICULTY_SETTINGS: Dictionary = {
+	"baby":   {"size": [6, 17], "prim_initial_density_factor": 0.75, "prim_min_tiles": 7, "final_target_density_factor": 0.75, "final_density_variation_factor": 0.2, "max_gen_attempts": 12},
+	"intern": {"size": [6, 17], "prim_initial_density_factor": 0.5, "prim_min_tiles": 14, "final_target_density_factor": 0.5, "final_density_variation_factor": 0.1, "max_gen_attempts": 12},
+	"profi":  {"size": [6, 17], "prim_initial_density_factor": 0.55, "prim_min_tiles": 28, "final_target_density_factor": 0.55, "final_density_variation_factor": 0.1, "max_gen_attempts": 14},
+	"master": {"size": [6, 17], "prim_initial_density_factor": 0.7, "prim_min_tiles": 38, "final_target_density_factor": 0.7, "final_density_variation_factor": 0.1, "max_gen_attempts": 10},
+	"expert": {"size": [6, 17], "prim_initial_density_factor": 1.0, "prim_min_tiles": 85, "final_target_density_factor": 0.75, "final_density_variation_factor": 0.05, "max_gen_attempts": 15},
+	"torrero":{"size": [6, 17], "prim_initial_density_factor": 1.0, "prim_min_tiles": 85, "final_target_density_factor": 0.86, "final_density_variation_factor": 0.05, "max_gen_attempts": 15}
+}
+
 func get_toroidal_neighbor_coord(val: int, max_val: int) -> int:
 	# Handles positive and negative overflow for 1D wrap-around
 	# E.g., if val = -1, max_val = 6, returns 5

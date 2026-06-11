@@ -1,38 +1,38 @@
 extends Node
 
 func change_scene_with_fade(scene_path: String, fade_out_duration: float = 0.3, fade_in_on_fail_duration: float = 0.3):
-	print("SceneChanger: Attempting to change scene to ", scene_path)
+	print_verbose("SceneChanger: Attempting to change scene to ", scene_path)
 
 	# --- Debugging for Root Node Children ---
-	print("SceneChanger: --- Root Node Children ---")
+	print_verbose("SceneChanger: --- Root Node Children ---")
 	if get_tree() and is_instance_valid(get_tree().get_root()):
 		var root_children = get_tree().get_root().get_children()
 		# --- CORRECTED LINE BELOW ---
 		if root_children.is_empty(): # Use is_empty() for Godot 3.x arrays
-			print("SceneChanger: Root has NO children.")
+			print_verbose("SceneChanger: Root has NO children.")
 		else:
 			for child in root_children:
-				print("  - Child Name: '", child.name, "', Path: '", child.get_path(), "', Type: '", child.get_class(), "'")
+				print_verbose("  - Child Name: '", child.name, "', Path: '", child.get_path(), "', Type: '", child.get_class(), "'")
 	else:
-		print("SceneChanger: Cannot access get_tree() or root node for child listing.")
-	print("SceneChanger: --- End Root Node Children ---")
-	print("SceneChanger: Engine.get_singleton_list() still reports: ", Engine.get_singleton_list())
+		print_verbose("SceneChanger: Cannot access get_tree() or root node for child listing.")
+	print_verbose("SceneChanger: --- End Root Node Children ---")
+	print_verbose("SceneChanger: Engine.get_singleton_list() still reports: ", Engine.get_singleton_list())
 	# --- End Debugging ---
 
 	var fade_overlay_node = null
 
 	# Priority 1: Try to get as a node in /root
 	if get_tree() and is_instance_valid(get_tree().get_root()) and get_tree().get_root().has_node("FadeOverlay"):
-		print("SceneChanger: Found '/root/FadeOverlay' node directly.")
+		print_verbose("SceneChanger: Found '/root/FadeOverlay' node directly.")
 		fade_overlay_node = get_tree().get_root().get_node("FadeOverlay")
 	else:
-		print("SceneChanger: Node '/root/FadeOverlay' NOT found directly.")
+		print_verbose("SceneChanger: Node '/root/FadeOverlay' NOT found directly.")
 		# Priority 2: Fallback to Engine.singleton check
 		if Engine.has_singleton("FadeOverlay"):
-			print("SceneChanger: Engine.has_singleton('FadeOverlay') is TRUE (unexpected fallback).")
+			print_verbose("SceneChanger: Engine.has_singleton('FadeOverlay') is TRUE (unexpected fallback).")
 			fade_overlay_node = Engine.get_singleton("FadeOverlay")
 		else:
-			print("SceneChanger: Engine.has_singleton('FadeOverlay') is FALSE (as observed before).")
+			print_verbose("SceneChanger: Engine.has_singleton('FadeOverlay') is FALSE (as observed before).")
 
 	if not is_instance_valid(fade_overlay_node):
 		printerr("SceneChanger: FadeOverlay could not be retrieved or is not a valid instance! Changing scene directly.")
