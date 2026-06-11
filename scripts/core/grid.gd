@@ -181,10 +181,10 @@ func _input(event: InputEvent):
 
 	if difficulty_changed_by_hotkey:
 		level_won_waiting_for_exit_input = false # Reset if they change difficulty (reloads level)
-		load_level_for_current_difficulty() 
-		if AudioManager: 
+		load_level_for_current_difficulty()
+		if AudioManager:
 			AudioManager.play_difficulty_music(current_difficulty_str)
-		return branches
+		return
 
 func center_grid():
 	var screen_size = get_viewport_rect().size
