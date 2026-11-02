@@ -18,22 +18,22 @@
 [sub_resource type="AtlasTexture" id="AtlasTexture_left_normal"]
 atlas = ExtResource("11_left")
 region = Rect2(0, 0, 42, 60)
-margin = Rect2(20, 6, 20, 12)
+margin = Rect2(12, 6, 12, 12)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_left_pressed"]
 atlas = ExtResource("12_left_pressed")
 region = Rect2(0, 0, 42, 60)
-margin = Rect2(20, 6, 20, 12)
+margin = Rect2(12, 6, 12, 12)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_right_normal"]
 atlas = ExtResource("13_right")
 region = Rect2(0, 0, 42, 60)
-margin = Rect2(0, 6, 30, 12)
+margin = Rect2(0, 6, 20, 12)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_right_pressed"]
 atlas = ExtResource("14_right_pressed")
 region = Rect2(0, 0, 42, 60)
-margin = Rect2(0, 6, 30, 12)
+margin = Rect2(0, 6, 20, 12)
 
 [node name="SettingsOverlay" type="Control"]
 z_index = 110
@@ -79,9 +79,9 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 40
+theme_override_constants/margin_left = 28
 theme_override_constants/margin_top = 41
-theme_override_constants/margin_right = 39
+theme_override_constants/margin_right = 27
 theme_override_constants/margin_bottom = 20
 
 [node name="VBox" type="VBoxContainer" parent="Panel/MarginContainer"]
@@ -97,8 +97,8 @@ layout_mode = 2
 size_flags_horizontal = 4
 theme = ExtResource("4_theme")
 theme_override_colors/font_shadow_color = Color(1, 0.780392, 0.458824, 1)
-theme_override_constants/shadow_offset_x = 4
 theme_override_constants/shadow_offset_y = 4
+theme_override_constants/shadow_offset_x = 4
 theme_override_font_sizes/normal_font_size = 64
 bbcode_enabled = true
 text = "[color=white]S[/color][color=#54fcfc]ettings[/color]"
@@ -115,7 +115,7 @@ layout_mode = 2
 theme_override_constants/separation = 8
 
 [node name="MusicSpacer" type="Control" parent="Panel/MarginContainer/VBox/Row_Music"]
-custom_minimum_size = Vector2(22, 0)
+custom_minimum_size = Vector2(12, 0)
 layout_mode = 2
 
 [node name="MusicIcon" type="TextureRect" parent="Panel/MarginContainer/VBox/Row_Music"]
@@ -132,14 +132,14 @@ texture_pressed = SubResource("AtlasTexture_left_pressed")
 [node name="MusicValueLabel" type="RichTextLabel" parent="Panel/MarginContainer/VBox/Row_Music"]
 unique_name_in_owner = true
 clip_contents = false
-custom_minimum_size = Vector2(116, 0)
+custom_minimum_size = Vector2(168, 0)
 layout_mode = 2
 size_flags_vertical = 4
 theme = ExtResource("4_theme")
 theme_override_colors/font_shadow_color = Color(1, 0.780392, 0.458824, 1)
-theme_override_constants/shadow_offset_x = 2
-theme_override_constants/shadow_offset_y = 2
-theme_override_font_sizes/normal_font_size = 32
+theme_override_constants/shadow_offset_y = 3
+theme_override_constants/shadow_offset_x = 3
+theme_override_font_sizes/normal_font_size = 48
 bbcode_enabled = true
 text = "[center]Classic[/center]"
 fit_content = true
@@ -157,7 +157,7 @@ layout_mode = 2
 theme_override_constants/separation = 8
 
 [node name="SFXSpacer" type="Control" parent="Panel/MarginContainer/VBox/Row_SFX"]
-custom_minimum_size = Vector2(22, 0)
+custom_minimum_size = Vector2(12, 0)
 layout_mode = 2
 
 [node name="SFXIcon" type="TextureRect" parent="Panel/MarginContainer/VBox/Row_SFX"]
@@ -174,14 +174,14 @@ texture_pressed = SubResource("AtlasTexture_left_pressed")
 [node name="SFXValueLabel" type="RichTextLabel" parent="Panel/MarginContainer/VBox/Row_SFX"]
 unique_name_in_owner = true
 clip_contents = false
-custom_minimum_size = Vector2(116, 0)
+custom_minimum_size = Vector2(168, 0)
 layout_mode = 2
 size_flags_vertical = 4
 theme = ExtResource("4_theme")
 theme_override_colors/font_shadow_color = Color(1, 0.780392, 0.458824, 1)
-theme_override_constants/shadow_offset_x = 2
-theme_override_constants/shadow_offset_y = 2
-theme_override_font_sizes/normal_font_size = 32
+theme_override_constants/shadow_offset_y = 3
+theme_override_constants/shadow_offset_x = 3
+theme_override_font_sizes/normal_font_size = 48
 bbcode_enabled = true
 text = "[center]On[/center]"
 fit_content = true
@@ -244,7 +244,7 @@ layout_mode = 2
 theme_override_constants/separation = 8
 
 [node name="LanguageSpacer" type="Control" parent="Panel/MarginContainer/VBox/Row_Language"]
-custom_minimum_size = Vector2(22, 0)
+custom_minimum_size = Vector2(12, 0)
 layout_mode = 2
 
 [node name="LanguageIcon" type="TextureRect" parent="Panel/MarginContainer/VBox/Row_Language"]
@@ -261,14 +261,14 @@ texture_pressed = SubResource("AtlasTexture_left_pressed")
 [node name="LanguageValueLabel" type="RichTextLabel" parent="Panel/MarginContainer/VBox/Row_Language"]
 unique_name_in_owner = true
 clip_contents = false
-custom_minimum_size = Vector2(116, 0)
+custom_minimum_size = Vector2(168, 0)
 layout_mode = 2
 size_flags_vertical = 4
 theme = ExtResource("4_theme")
 theme_override_colors/font_shadow_color = Color(1, 0.780392, 0.458824, 1)
-theme_override_constants/shadow_offset_x = 2
-theme_override_constants/shadow_offset_y = 2
-theme_override_font_sizes/normal_font_size = 32
+theme_override_constants/shadow_offset_y = 3
+theme_override_constants/shadow_offset_x = 3
+theme_override_font_sizes/normal_font_size = 48
 bbcode_enabled = true
 text = "[center]EN[/center]"
 fit_content = true
@@ -286,7 +286,7 @@ layout_mode = 2
 theme_override_constants/separation = 8
 
 [node name="SolveAnimSpacer" type="Control" parent="Panel/MarginContainer/VBox/Row_SolveAnim"]
-custom_minimum_size = Vector2(22, 0)
+custom_minimum_size = Vector2(12, 0)
 layout_mode = 2
 
 [node name="SolveAnimIcon" type="TextureRect" parent="Panel/MarginContainer/VBox/Row_SolveAnim"]
@@ -303,14 +303,14 @@ texture_pressed = SubResource("AtlasTexture_left_pressed")
 [node name="SolveAnimValueLabel" type="RichTextLabel" parent="Panel/MarginContainer/VBox/Row_SolveAnim"]
 unique_name_in_owner = true
 clip_contents = false
-custom_minimum_size = Vector2(116, 0)
+custom_minimum_size = Vector2(168, 0)
 layout_mode = 2
 size_flags_vertical = 4
 theme = ExtResource("4_theme")
 theme_override_colors/font_shadow_color = Color(1, 0.780392, 0.458824, 1)
-theme_override_constants/shadow_offset_x = 2
-theme_override_constants/shadow_offset_y = 2
-theme_override_font_sizes/normal_font_size = 32
+theme_override_constants/shadow_offset_y = 3
+theme_override_constants/shadow_offset_x = 3
+theme_override_font_sizes/normal_font_size = 48
 bbcode_enabled = true
 text = "[center]On[/center]"
 fit_content = true
@@ -328,7 +328,7 @@ layout_mode = 2
 theme_override_constants/separation = 8
 
 [node name="TurnAnimSpacer" type="Control" parent="Panel/MarginContainer/VBox/Row_TurnAnim"]
-custom_minimum_size = Vector2(22, 0)
+custom_minimum_size = Vector2(12, 0)
 layout_mode = 2
 
 [node name="TurnAnimIcon" type="TextureRect" parent="Panel/MarginContainer/VBox/Row_TurnAnim"]
@@ -345,14 +345,14 @@ texture_pressed = SubResource("AtlasTexture_left_pressed")
 [node name="TurnAnimValueLabel" type="RichTextLabel" parent="Panel/MarginContainer/VBox/Row_TurnAnim"]
 unique_name_in_owner = true
 clip_contents = false
-custom_minimum_size = Vector2(116, 0)
+custom_minimum_size = Vector2(168, 0)
 layout_mode = 2
 size_flags_vertical = 4
 theme = ExtResource("4_theme")
 theme_override_colors/font_shadow_color = Color(1, 0.780392, 0.458824, 1)
-theme_override_constants/shadow_offset_x = 2
-theme_override_constants/shadow_offset_y = 2
-theme_override_font_sizes/normal_font_size = 32
+theme_override_constants/shadow_offset_y = 3
+theme_override_constants/shadow_offset_x = 3
+theme_override_font_sizes/normal_font_size = 48
 bbcode_enabled = true
 text = "[center]On[/center]"
 fit_content = true
@@ -375,8 +375,8 @@ size_flags_horizontal = 4
 mouse_filter = 2
 theme = ExtResource("4_theme")
 theme_override_colors/font_shadow_color = Color(1, 0.780392, 0.458824, 1)
-theme_override_constants/shadow_offset_x = 2
 theme_override_constants/shadow_offset_y = 2
+theme_override_constants/shadow_offset_x = 2
 theme_override_font_sizes/normal_font_size = 32
 bbcode_enabled = true
 scroll_active = false
@@ -406,8 +406,8 @@ custom_minimum_size = Vector2(148, 0)
 layout_mode = 2
 theme = ExtResource("4_theme")
 theme_override_colors/font_shadow_color = Color(1, 0.780392, 0.458824, 1)
-theme_override_constants/shadow_offset_x = 3
 theme_override_constants/shadow_offset_y = 3
+theme_override_constants/shadow_offset_x = 3
 theme_override_font_sizes/normal_font_size = 48
 bbcode_enabled = true
 text = "[center]Credits[/center]"
@@ -422,8 +422,8 @@ custom_minimum_size = Vector2(148, 0)
 layout_mode = 2
 theme = ExtResource("4_theme")
 theme_override_colors/font_shadow_color = Color(1, 0.780392, 0.458824, 1)
-theme_override_constants/shadow_offset_x = 3
 theme_override_constants/shadow_offset_y = 3
+theme_override_constants/shadow_offset_x = 3
 theme_override_font_sizes/normal_font_size = 48
 bbcode_enabled = true
 text = "[color=white]C[/color][color=#54fcfc]lose[/color]"

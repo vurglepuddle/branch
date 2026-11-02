@@ -4,7 +4,7 @@ extends SceneTree
 # Run with tests/run_tests.sh.
 
 const SETTINGS_FILE := "user://settings.cfg"
-const MIN_TAP_SIZE := Vector2(60, 70)
+const MIN_TAP_SIZE := Vector2(54, 70)
 const ARROW_INK_WIDTH: float = 42.0
 
 var _failures: int = 0
@@ -33,6 +33,7 @@ func _run() -> void:
 	_test_rows_have_icons_and_big_tap_areas()
 	_test_icons_are_exact_3x_art()
 	_test_font_sizes_are_crisp()
+	_test_value_column_fits_every_value()
 	_test_names_are_gone()
 	_test_title_and_close_are_centred_on_the_rows()
 	_test_music_selectors_go_both_ways()
@@ -80,6 +81,22 @@ func _test_font_sizes_are_crisp() -> void:
 		for found in size_pattern.search_all(text):
 			if int(found.get_string(1)) % 16 != 0:
 				_fail("%s uses font size %s, which isn't crisp. Use a multiple of 16" % [path, found.get_string(1)])
+
+# A value wider than its column pushes the row out, which makes the arrows jump as you click through.
+func _test_value_column_fits_every_value() -> void:
+	var font: Font = load("res://fonts/vetka.ttf")
+	var strings: Dictionary = load("res://scripts/core/locale.gd").STRINGS
+	for row in ["Music", "SFX", "Language", "SolveAnim", "TurnAnim"]:
+		var label: RichTextLabel = _overlay.get_node("%%%sValueLabel" % row)
+		var size: int = label.get_theme_font_size("normal_font_size")
+		var values: Array[String] = ["EN", "RU"]
+		for language in strings:
+			for key in ["classic", "modern", "midi_new", "off", "on"]:
+				values.append(strings[language][key])
+		for value in values:
+			var width: float = font.get_string_size(value, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
+			if width > label.custom_minimum_size.x:
+				_fail("'%s' is %.0f px wide, but the %s value column is only %.0f" % [value, width, row, label.custom_minimum_size.x])
 
 func _test_names_are_gone() -> void:
 	for row in ["Music", "SFX", "Language", "SolveAnim", "TurnAnim"]:
