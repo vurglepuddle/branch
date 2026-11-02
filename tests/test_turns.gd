@@ -27,6 +27,7 @@ func _run() -> void:
 	await process_frame
 	_settings = root.get_node("GlobalSettings")
 	var saved_setting: bool = _settings.turn_animation
+	_settings.give_up_animation = true
 
 	_test_off_by_default()
 	_test_pointer()

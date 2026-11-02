@@ -11,7 +11,7 @@ const H: int = 17
 const TIME_SCALE: float = 8.0
 const WAIT_LIMIT_MS: int = 60000
 # Each grid and each menu start leaks its generator Node today. Phase 2 removes this: set it to 0 then.
-const KNOWN_LEAKED_GENERATORS: int = 18
+const KNOWN_LEAKED_GENERATORS: int = 30
 
 var _failures: int = 0
 var _settings: Node
@@ -22,10 +22,14 @@ func _initialize() -> void:
 func _run() -> void:
 	await process_frame
 	_settings = root.get_node("GlobalSettings")
+	# Tests set what they depend on in memory, so saved player settings can't change the result.
 	_settings.give_up_animation = true
+	_settings.turn_animation = false
 	Engine.time_scale = TIME_SCALE
 
 	await _test_grid_fallback_entry()
+	await _test_menu_round_trips()
+	_settings.turn_animation = true
 	await _test_menu_round_trips()
 
 	Engine.time_scale = 1.0
@@ -78,7 +82,7 @@ func _test_menu_round_trips() -> void:
 		_check_board(grid, diff, "menu")
 		_check_alive_matches_connections(grid, "%s menu start" % diff)
 
-		_click_some_tiles(grid, diff)
+		await _click_some_tiles(grid, diff)
 		# Alternate endings so both exits are covered at every difficulty over repeated runs.
 		if i % 2 == 0:
 			await _finish_by_winning(grid, diff)
@@ -101,7 +105,7 @@ func _click_some_tiles(grid: Node, diff: String) -> void:
 	var cells: Array = Checks.current_board(grid.branches).keys()
 	cells.shuffle()
 	for cell in cells.slice(0, 12):
-		grid._on_branch_clicked(cell.x, cell.y)
+		await _click(grid, cell)
 		_check_alive_matches_connections(grid, "%s after clicking %s" % [diff, cell])
 		if grid.all_connected:
 			return
@@ -111,7 +115,7 @@ func _finish_by_winning(grid: Node, diff: String) -> void:
 	for cell in solved:
 		var turns: int = 0
 		while not grid.all_connected and grid.branches[cell.x][cell.y].connections != solved[cell]:
-			grid._on_branch_clicked(cell.x, cell.y)
+			await _click(grid, cell)
 			_check_alive_matches_connections(grid, "%s solving %s" % [diff, cell])
 			turns += 1
 			if turns > 4:
@@ -125,6 +129,12 @@ func _finish_by_winning(grid: Node, diff: String) -> void:
 	if not await _wait_for(func(): return grid.level_won_waiting_for_exit_input, "%s: exit prompt after win" % diff):
 		return
 	grid._exit_to_main_menu()
+
+# Clicks a tile and waits out its turn animation, if it has one.
+func _click(grid: Node, cell: Vector2i) -> void:
+	var tile: Node = grid.branches[cell.x][cell.y]
+	grid._on_branch_clicked(cell.x, cell.y)
+	await _wait_for(func(): return not tile.is_turning(), "tile %s to finish turning" % cell)
 
 func _finish_by_giving_up(grid: Node, diff: String) -> void:
 	var solved: Dictionary = Checks.solved_board(grid.branches)
