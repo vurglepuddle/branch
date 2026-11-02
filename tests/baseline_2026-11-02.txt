@@ -1,0 +1,10 @@
+# Current generator, before any changes. 200 boards per difficulty, recorded 2026-11-02.
+# Compare after changing the generator. Produced by: tests/run_tests.sh 200
+
+difficulty allowed | tiles avg [min..max] | tips str% bend% 3way% | line avg max | on5+% beside% | depth | starts connected
+baby            10 |   7.0 [  7..  7] |  3.1   13    27    16 |  3.4   4 |     0       0 |   3.4 | 0
+intern          30 |  14.6 [ 14.. 15] |  5.7   18    18    25 |  4.8   6 |    26       6 |   5.4 | 0
+profi           53 |  28.0 [ 27.. 29] |  9.8   21    16    28 |  6.4   9 |    38      15 |   8.3 | 0
+master          72 |  46.8 [ 45.. 50] | 16.3   21    14    31 |  7.7  12 |    41      23 |  11.3 | 0
+expert         101 |  92.4 [ 80..100] | 31.0   22    13    31 | 10.4  17 |    44      28 |  19.0 | 0
+torrero        102 |  89.7 [ 83.. 97] | 33.9   16    11    36 |  9.6  17 |    39      27 |  14.4 | 0
