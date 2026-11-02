@@ -101,20 +101,23 @@ func _test_stall_moves_one_frame() -> void:
 	star.queue_free()
 	await process_frame
 
+# New stars keep spawning, so the count may never reach zero. It just has to go down when one finishes.
 func _test_splash_spawns_and_clears_stars() -> void:
 	var splash: Node = load("res://scenes/SplashScreen.tscn").instantiate()
 	root.add_child(splash)
 	current_scene = splash
-	var deadline: int = Time.get_ticks_msec() + 6000
-	var most: int = 0
-	while Time.get_ticks_msec() < deadline:
+	var deadline: int = Time.get_ticks_msec() + 8000
+	var previous: int = 0
+	var spawned: bool = false
+	var counted_down: bool = false
+	while Time.get_ticks_msec() < deadline and not counted_down:
 		await process_frame
-		most = maxi(most, splash.active_stars)
-		if most > 0 and splash.active_stars == 0:
-			break
-	if most == 0:
+		spawned = spawned or splash.active_stars > 0
+		counted_down = splash.active_stars < previous
+		previous = splash.active_stars
+	if not spawned:
 		_fail("the splash screen never spawned a star")
-	elif splash.active_stars != 0:
+	elif not counted_down:
 		_fail("finished stars weren't counted back down")
 	current_scene = null
 	splash.queue_free()

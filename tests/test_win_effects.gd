@@ -179,6 +179,8 @@ func _test_glints(grid: Node, tips: Array) -> void:
 	var last_stage: Dictionary = {}
 	var durations: Array[int] = []
 	var gaps: Array[int] = []
+	var last_start: int = -1
+	var closest_start: int = 1000000
 	var end_time: int = now + WinEffects.GLINT_LIFETIME_MS - 1000
 	while now < end_time:
 		now += TICK_MS
@@ -192,6 +194,9 @@ func _test_glints(grid: Node, tips: Array) -> void:
 					began[i] = now
 					last_stage[i] = star.frame
 					sequences += 1
+					if last_start >= 0:
+						closest_start = mini(closest_start, now - last_start)
+					last_start = now
 					if star.frame != 0:
 						stage_orders_ok = false
 					if ended.has(i):
@@ -205,8 +210,15 @@ func _test_glints(grid: Node, tips: Array) -> void:
 				ended[i] = now
 				began.erase(i)
 		most_at_once = maxi(most_at_once, showing)
-	_expect(sequences > slots * 10, "only %d glints played in 100 seconds" % sequences)
-	_expect(most_at_once == slots, "at most %d glints should show at once, saw %d" % [slots, most_at_once])
+	# Each slot averages one glint about every 4 seconds, and the old rate was one about every 2.
+	var seconds: float = (WinEffects.GLINT_LIFETIME_MS - 1000) / 1000.0
+	var seconds_per_glint: float = seconds * slots / max(sequences, 1)
+	_expect(seconds_per_glint > 3.0 and seconds_per_glint < 5.0, "each slot glints every %.1f s, it should be about 4" % seconds_per_glint)
+	_expect(gaps.min() >= WinEffects.GLINT_WAIT_MIN_MS - TICK_MS, "a tile glinted again after only %d ms" % gaps.min())
+	_expect(closest_start < 700, "glints should sometimes land close together, the closest were %d ms apart" % closest_start)
+	_expect(most_at_once > 0 and most_at_once <= slots, "at most %d glints should show at once, saw %d" % [slots, most_at_once])
+	var waits: Array = range(200).map(func(_i): return effects._glint_wait())
+	_expect(waits.min() < 1000 and waits.max() > 5000, "glint waits should vary widely, they ran from %d to %d ms" % [waits.min(), waits.max()])
 	_expect(stage_orders_ok, "a glint should play its stages in order from the start")
 	var expected_ms: int = WinEffects.GLINT_STAGES * WinEffects.GLINT_STAGE_MS
 	_expect(durations.min() >= expected_ms - TICK_MS and durations.max() <= expected_ms + TICK_MS * 2, "glints lasted %d to %d ms, expected about %d" % [durations.min(), durations.max(), expected_ms])

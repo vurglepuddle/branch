@@ -25,9 +25,9 @@ const LAST_STEP: int = 41
 const GLINT_SLOTS: Dictionary = {"baby": 1, "intern": 2, "profi": 3, "master": 4, "expert": 5, "torrero": 5}
 const GLINT_STAGES: int = 9 # Five drawings, forward then back, on the FruitStar sheet
 const GLINT_STAGE_MS: int = 45
-const GLINT_WAIT_MULTIPLIER: int = 3
-const GLINT_WAIT_MIN: int = 75
-const GLINT_WAIT_MAX: int = 999
+# A wide range: on average a slot rests about 3.6 seconds, but two glints can still land close together.
+const GLINT_WAIT_MIN_MS: int = 225
+const GLINT_WAIT_MAX_MS: int = 7000
 const GLINT_LIFETIME_MS: int = 100000
 
 var rng := RandomNumberGenerator.new()
@@ -149,7 +149,7 @@ func _pick_free_tip() -> Node:
 	return free[rng.randi_range(0, free.size() - 1)]
 
 func _glint_wait() -> int:
-	return GLINT_WAIT_MULTIPLIER * rng.randi_range(GLINT_WAIT_MIN, GLINT_WAIT_MAX)
+	return rng.randi_range(GLINT_WAIT_MIN_MS, GLINT_WAIT_MAX_MS)
 
 func _hide_glints() -> void:
 	for slot in _glint_slots:
