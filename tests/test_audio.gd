@@ -47,6 +47,10 @@ func _test_cycle(settings: Node) -> void:
 			_fail("cycle reached setting '%s', expected '%s'" % [settings.music_style, step[0]])
 		if _audio._music_display_name() != step[1]:
 			_fail("cycle shows '%s', expected '%s'" % [_audio._music_display_name(), step[1]])
+	for style in ["off", "midi_new", "modern", "classic"]:
+		_audio._advance_music_style(-1)
+		if settings.music_style != style:
+			_fail("backward cycle reached setting '%s', expected '%s'" % [settings.music_style, style])
 
 func _test_style_routes_music_and_sfx() -> void:
 	var cases: Array = [

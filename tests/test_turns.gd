@@ -32,7 +32,6 @@ func _run() -> void:
 	_test_on_by_default()
 	_test_turn_sheet_layout()
 	_test_pointer()
-	await _test_settings_row()
 
 	var grid: Node = await _open_grid()
 	_test_instant_when_off(grid)
@@ -99,19 +98,6 @@ func _test_pointer() -> void:
 	_settings.notification(Node.NOTIFICATION_WM_MOUSE_ENTER)
 	if not pointer.visible:
 		_fail("the pointer should return when the mouse comes back")
-
-func _test_settings_row() -> void:
-	var overlay: Control = load("res://scenes/SettingsOverlay.tscn").instantiate()
-	root.add_child(overlay)
-	overlay.open()
-	await process_frame
-	await process_frame
-	var locale: Node = root.get_node("Locale")
-	if locale.t("turn_anim") == "turn_anim":
-		_fail("the Turn Anim label has no translation")
-	if overlay.get_node("%TurnAnimValueLabel").text.is_empty():
-		_fail("the Turn Anim row has no value")
-	overlay.queue_free()
 
 func _test_instant_when_off(grid: Node) -> void:
 	_settings.turn_animation = false

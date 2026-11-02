@@ -68,6 +68,7 @@ const MODERN_BUTTON_VOLUME_DB: float = -10.0
 const STAR_TWINKLE_VOLUME_DB: float = -4.0
 const INITIAL_MUSIC_FADE_IN_DURATION: float = 1.5
 const MIDI_NEW_DIR: String = "res://audio/Midi_beautiful/"
+const MUSIC_STYLE_CYCLE: Array[String] = ["classic", "modern", "midi_new", "off"]
 
 func _ready():
 	setup_audio_players()
@@ -94,18 +95,7 @@ func setup_audio_players():
 func initialize_audio_settings():
 	print_verbose("AudioManager initialize_audio_settings: START")
 	sfx_enabled = GlobalSettings.sfx_enabled
-	match GlobalSettings.music_style:
-		"classic":
-			current_music_style = MusicStyle.CLASSIC
-			is_menu_music_off = false
-		"modern":
-			current_music_style = MusicStyle.MODERN
-			is_menu_music_off = false
-		"midi_new":
-			current_music_style = MusicStyle.MIDI_NEW
-			is_menu_music_off = false
-		"off":
-			is_menu_music_off = true
+	_apply_music_style(GlobalSettings.music_style)
 	sfx_player.volume_db = DEFAULT_SFX_VOLUME_DB if sfx_enabled else MUSIC_MUTED_VOLUME_DB
 
 	_update_menu_music_on_state_change(true, INITIAL_MUSIC_FADE_IN_DURATION)
@@ -249,32 +239,41 @@ func play_beep_pitched(y: int, _grid_height: int):
 		sfx_player.volume_db = DEFAULT_SFX_VOLUME_DB
 		sfx_player.play()
 
-func toggle_music_style_and_state():
-	_advance_music_style()
+func toggle_music_style_and_state(direction: int = 1):
+	_advance_music_style(direction)
 	emit_signal("music_display_changed", _music_display_name())
 	GlobalSettings.save_settings()
 	play_named_sfx("button_sound")
 	_update_menu_music_on_state_change()
 
-# Classic -> Modern -> Midi New -> Off -> Classic
-func _advance_music_style() -> void:
-	if is_menu_music_off:
-		is_menu_music_off = false
-		current_music_style = MusicStyle.CLASSIC
-	elif current_music_style == MusicStyle.CLASSIC:
-		current_music_style = MusicStyle.MODERN
-	elif current_music_style == MusicStyle.MODERN:
-		current_music_style = MusicStyle.MIDI_NEW
-	else:
-		is_menu_music_off = true
+# Direction 1 goes Classic -> Modern -> Midi New -> Off -> Classic, and -1 goes the other way.
+func _advance_music_style(direction: int = 1) -> void:
+	var index: int = MUSIC_STYLE_CYCLE.find(_current_music_style_name())
+	var style: String = MUSIC_STYLE_CYCLE[posmod(index + direction, MUSIC_STYLE_CYCLE.size())]
+	_apply_music_style(style)
+	GlobalSettings.music_style = style
 
+func _current_music_style_name() -> String:
 	if is_menu_music_off:
-		GlobalSettings.music_style = "off"
-	else:
-		match current_music_style:
-			MusicStyle.CLASSIC: GlobalSettings.music_style = "classic"
-			MusicStyle.MODERN: GlobalSettings.music_style = "modern"
-			MusicStyle.MIDI_NEW: GlobalSettings.music_style = "midi_new"
+		return "off"
+	match current_music_style:
+		MusicStyle.MODERN: return "modern"
+		MusicStyle.MIDI_NEW: return "midi_new"
+		_: return "classic"
+
+func _apply_music_style(style: String) -> void:
+	match style:
+		"classic":
+			current_music_style = MusicStyle.CLASSIC
+			is_menu_music_off = false
+		"modern":
+			current_music_style = MusicStyle.MODERN
+			is_menu_music_off = false
+		"midi_new":
+			current_music_style = MusicStyle.MIDI_NEW
+			is_menu_music_off = false
+		"off":
+			is_menu_music_off = true
 
 func _update_menu_music_on_state_change(fade_in: bool = true, duration: float = MUSIC_FADE_DURATION):
 	if music_globally_muted:

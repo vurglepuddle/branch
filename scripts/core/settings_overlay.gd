@@ -8,33 +8,39 @@ const BBCODE_REST: String = "#590000"
 # const BBCODE_REST: String = "#54fcfc"
 
 @onready var title_label: RichTextLabel = %TitleLabel
-@onready var music_label: RichTextLabel = %MusicLabel
-@onready var music_toggle: TextureButton = %MusicToggle
+@onready var music_prev: TextureButton = %MusicPrev
+@onready var music_next: TextureButton = %MusicNext
 @onready var music_value_label: RichTextLabel = %MusicValueLabel
-@onready var sfx_label: RichTextLabel = %SFXLabel
-@onready var sfx_toggle: TextureButton = %SFXToggle
+@onready var sfx_prev: TextureButton = %SFXPrev
+@onready var sfx_next: TextureButton = %SFXNext
 @onready var sfx_value_label: RichTextLabel = %SFXValueLabel
 @onready var graphics_label: RichTextLabel = %GraphicsLabel
 @onready var graphics_toggle: TextureButton = %GraphicsToggle
 @onready var graphics_value_label: RichTextLabel = %GraphicsValueLabel
-@onready var language_label: RichTextLabel = %LanguageLabel
-@onready var language_toggle: TextureButton = %LanguageToggle
+@onready var language_prev: TextureButton = %LanguagePrev
+@onready var language_next: TextureButton = %LanguageNext
 @onready var language_value_label: RichTextLabel = %LanguageValueLabel
-@onready var solve_anim_label: RichTextLabel = %SolveAnimLabel
-@onready var solve_anim_toggle: TextureButton = %SolveAnimToggle
+@onready var solve_anim_prev: TextureButton = %SolveAnimPrev
+@onready var solve_anim_next: TextureButton = %SolveAnimNext
 @onready var solve_anim_value_label: RichTextLabel = %SolveAnimValueLabel
-@onready var turn_anim_label: RichTextLabel = %TurnAnimLabel
-@onready var turn_anim_toggle: TextureButton = %TurnAnimToggle
+@onready var turn_anim_prev: TextureButton = %TurnAnimPrev
+@onready var turn_anim_next: TextureButton = %TurnAnimNext
 @onready var turn_anim_value_label: RichTextLabel = %TurnAnimValueLabel
 @onready var close_label: RichTextLabel = %CloseLabel
 
 func _ready() -> void:
-	music_toggle.pressed.connect(_on_music_toggle)
-	sfx_toggle.pressed.connect(_on_sfx_toggle)
+	music_prev.pressed.connect(_on_music_changed.bind(-1))
+	music_next.pressed.connect(_on_music_changed.bind(1))
 	graphics_toggle.pressed.connect(_on_graphics_toggle)
-	language_toggle.pressed.connect(_on_language_toggle)
-	solve_anim_toggle.pressed.connect(_on_solve_anim_toggle)
-	turn_anim_toggle.pressed.connect(_on_turn_anim_toggle)
+	# These settings only have two values, so both arrows do the same thing.
+	for selector in [sfx_prev, sfx_next]:
+		selector.pressed.connect(_on_sfx_toggle)
+	for selector in [language_prev, language_next]:
+		selector.pressed.connect(_on_language_toggle)
+	for selector in [solve_anim_prev, solve_anim_next]:
+		selector.pressed.connect(_on_solve_anim_toggle)
+	for selector in [turn_anim_prev, turn_anim_next]:
+		selector.pressed.connect(_on_turn_anim_toggle)
 	close_label.gui_input.connect(_on_close_label_input)
 	visible = false
 
@@ -51,6 +57,9 @@ func _fmt(text: String) -> String:
 	var first := text.substr(0, 1).to_upper()
 	var rest := text.substr(1)
 	return "[color=%s]%s[/color][color=%s]%s[/color]" % [BBCODE_FIRST, first, BBCODE_REST, rest]
+
+func _fmt_centered(text: String) -> String:
+	return "[center]%s[/center]" % _fmt(text)
 
 func _music_value_text() -> String:
 	match GlobalSettings.music_style:
@@ -76,27 +85,22 @@ func _turn_anim_value_text() -> String:
 
 func _refresh_labels() -> void:
 	title_label.bbcode_text          = _fmt(Locale.t("settings"))
-	music_label.bbcode_text          = _fmt(Locale.t("music"))
-	sfx_label.bbcode_text            = _fmt(Locale.t("sfx"))
 	graphics_label.bbcode_text       = _fmt(Locale.t("graphics"))
-	language_label.bbcode_text       = _fmt(Locale.t("language"))
-	solve_anim_label.bbcode_text     = _fmt(Locale.t("solve_anim"))
-	turn_anim_label.bbcode_text      = _fmt(Locale.t("turn_anim"))
-	close_label.bbcode_text          = _fmt(Locale.t("close"))
-	music_value_label.bbcode_text    = _fmt(_music_value_text())
-	sfx_value_label.bbcode_text      = _fmt(_sfx_value_text())
+	close_label.bbcode_text          = _fmt_centered(Locale.t("close"))
+	music_value_label.bbcode_text    = _fmt_centered(_music_value_text())
+	sfx_value_label.bbcode_text      = _fmt_centered(_sfx_value_text())
 	graphics_value_label.bbcode_text = _fmt(_graphics_value_text())
-	language_value_label.bbcode_text = _fmt(_language_value_text())
-	solve_anim_value_label.bbcode_text = _fmt(_solve_anim_value_text())
-	turn_anim_value_label.bbcode_text = _fmt(_turn_anim_value_text())
+	language_value_label.bbcode_text = _fmt_centered(_language_value_text())
+	solve_anim_value_label.bbcode_text = _fmt_centered(_solve_anim_value_text())
+	turn_anim_value_label.bbcode_text = _fmt_centered(_turn_anim_value_text())
 
-func _on_music_toggle() -> void:
-	AudioManager.toggle_music_style_and_state()
-	music_value_label.bbcode_text = _fmt(_music_value_text())
+func _on_music_changed(direction: int) -> void:
+	AudioManager.toggle_music_style_and_state(direction)
+	music_value_label.bbcode_text = _fmt_centered(_music_value_text())
 
 func _on_sfx_toggle() -> void:
 	AudioManager.toggle_sfx_enabled()
-	sfx_value_label.bbcode_text = _fmt(_sfx_value_text())
+	sfx_value_label.bbcode_text = _fmt_centered(_sfx_value_text())
 
 func _on_graphics_toggle() -> void:
 	_play_button_sound()
@@ -115,13 +119,13 @@ func _on_solve_anim_toggle() -> void:
 	_play_button_sound()
 	GlobalSettings.give_up_animation = !GlobalSettings.give_up_animation
 	GlobalSettings.save_settings()
-	solve_anim_value_label.bbcode_text = _fmt(_solve_anim_value_text())
+	solve_anim_value_label.bbcode_text = _fmt_centered(_solve_anim_value_text())
 
 func _on_turn_anim_toggle() -> void:
 	_play_button_sound()
 	GlobalSettings.turn_animation = !GlobalSettings.turn_animation
 	GlobalSettings.save_settings()
-	turn_anim_value_label.bbcode_text = _fmt(_turn_anim_value_text())
+	turn_anim_value_label.bbcode_text = _fmt_centered(_turn_anim_value_text())
 
 func _input(event: InputEvent) -> void:
 	if not visible:

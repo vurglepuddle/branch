@@ -1,10 +1,39 @@
-[gd_scene load_steps=6 format=3 uid="uid://dpxapytkj5tjx"]
+[gd_scene load_steps=19 format=3 uid="uid://dpxapytkj5tjx"]
 
 [ext_resource type="Script" path="res://scripts/core/settings_overlay.gd" id="1_sov"]
 [ext_resource type="Texture2D" uid="uid://cymixqe6877j7" path="res://sprites/UI/button_default.png" id="2_btn"]
 [ext_resource type="Texture2D" uid="uid://dbuyqnsrkb6sg" path="res://sprites/UI/button_press.png" id="3_btnp"]
 [ext_resource type="Theme" uid="uid://mecrr0hcgwnn" path="res://fonts/main_theme.tres" id="4_theme"]
 [ext_resource type="Texture2D" uid="uid://dkx20i30phtvn" path="res://sprites/UI/menu_bg.png" id="5_rcvns"]
+[ext_resource type="Texture2D" path="res://sprites/UI/Music_icon.png" id="6_music"]
+[ext_resource type="Texture2D" path="res://sprites/UI/SFX_icon.png" id="7_sfx"]
+[ext_resource type="Texture2D" path="res://sprites/UI/Language_icon.png" id="8_language"]
+[ext_resource type="Texture2D" path="res://sprites/UI/Animation_icon.png" id="9_animation"]
+[ext_resource type="Texture2D" path="res://sprites/UI/Turn_icon.png" id="10_turn"]
+[ext_resource type="Texture2D" path="res://sprites/UI/Selector_left_icon_normal.png" id="11_left"]
+[ext_resource type="Texture2D" path="res://sprites/UI/Selector_left_icon_pressed.png" id="12_left_pressed"]
+[ext_resource type="Texture2D" path="res://sprites/UI/Selector_right_icon_normal.png" id="13_right"]
+[ext_resource type="Texture2D" path="res://sprites/UI/Selector_right_icon_pressed.png" id="14_right_pressed"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_left_normal"]
+atlas = ExtResource("11_left")
+region = Rect2(0, 0, 28, 40)
+margin = Rect2(28, 10, 28, 20)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_left_pressed"]
+atlas = ExtResource("12_left_pressed")
+region = Rect2(0, 0, 28, 40)
+margin = Rect2(28, 10, 28, 20)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_right_normal"]
+atlas = ExtResource("13_right")
+region = Rect2(0, 0, 28, 40)
+margin = Rect2(0, 10, 40, 20)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_right_pressed"]
+atlas = ExtResource("14_right_pressed")
+region = Rect2(0, 0, 28, 40)
+margin = Rect2(0, 10, 40, 20)
 
 [node name="SettingsOverlay" type="Control"]
 z_index = 110
@@ -34,10 +63,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -215.5
-offset_top = -204.0
-offset_right = 212.5
-offset_bottom = 356.0
+offset_left = -220.5
+offset_top = -212.0
+offset_right = 222.5
+offset_bottom = 351.0
 grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.988235, 0.988235, 0.705882, 0)
@@ -48,21 +77,17 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 15.0
-offset_top = 4.0
-offset_right = 13.0
-offset_bottom = -13.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 24
-theme_override_constants/margin_top = 20
-theme_override_constants/margin_right = 24
+theme_override_constants/margin_left = 82
+theme_override_constants/margin_top = 36
+theme_override_constants/margin_right = 43
 theme_override_constants/margin_bottom = 20
 
 [node name="VBox" type="VBoxContainer" parent="Panel/MarginContainer"]
 z_index = 110
 layout_mode = 2
-theme_override_constants/separation = 5
+theme_override_constants/separation = 6
 
 [node name="TitleLabel" type="RichTextLabel" parent="Panel/MarginContainer/VBox"]
 unique_name_in_owner = true
@@ -78,108 +103,80 @@ scroll_active = false
 autowrap_mode = 0
 
 [node name="GapUp" type="Control" parent="Panel/MarginContainer/VBox"]
-custom_minimum_size = Vector2(0, 5)
+custom_minimum_size = Vector2(0, 12)
 layout_mode = 2
 
 [node name="Row_Music" type="HBoxContainer" parent="Panel/MarginContainer/VBox"]
-custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 theme_override_constants/separation = 8
-alignment = 1
 
-[node name="GapRight" type="Control" parent="Panel/MarginContainer/VBox/Row_Music"]
-custom_minimum_size = Vector2(5, 0)
+[node name="MusicIcon" type="TextureRect" parent="Panel/MarginContainer/VBox/Row_Music"]
 layout_mode = 2
+size_flags_vertical = 4
+texture = ExtResource("6_music")
 
-[node name="MusicLabel" type="RichTextLabel" parent="Panel/MarginContainer/VBox/Row_Music"]
-unique_name_in_owner = true
-clip_contents = false
-custom_minimum_size = Vector2(125, 0)
-layout_mode = 2
-theme = ExtResource("4_theme")
-theme_override_colors/font_shadow_color = Color(1, 0.780392, 0.458824, 1)
-theme_override_font_sizes/normal_font_size = 38
-bbcode_enabled = true
-text = "[color=white]M[/color][color=#54fcfc]usic[/color]"
-fit_content = true
-scroll_active = false
-autowrap_mode = 0
-
-[node name="GapRight2" type="Control" parent="Panel/MarginContainer/VBox/Row_Music"]
-custom_minimum_size = Vector2(5, 0)
-layout_mode = 2
-
-[node name="MusicToggle" type="TextureButton" parent="Panel/MarginContainer/VBox/Row_Music"]
+[node name="MusicPrev" type="TextureButton" parent="Panel/MarginContainer/VBox/Row_Music"]
 unique_name_in_owner = true
 layout_mode = 2
-texture_normal = ExtResource("2_btn")
-texture_pressed = ExtResource("3_btnp")
+texture_normal = SubResource("AtlasTexture_left_normal")
+texture_pressed = SubResource("AtlasTexture_left_pressed")
 
 [node name="MusicValueLabel" type="RichTextLabel" parent="Panel/MarginContainer/VBox/Row_Music"]
 unique_name_in_owner = true
 clip_contents = false
 custom_minimum_size = Vector2(130, 0)
 layout_mode = 2
+size_flags_vertical = 4
 theme = ExtResource("4_theme")
 theme_override_colors/font_shadow_color = Color(1, 0.780392, 0.458824, 1)
-theme_override_font_sizes/bold_italics_font_size = 38
-theme_override_font_sizes/italics_font_size = 38
-theme_override_font_sizes/mono_font_size = 38
 theme_override_font_sizes/normal_font_size = 38
-theme_override_font_sizes/bold_font_size = 38
 bbcode_enabled = true
-text = "[color=#590000]Classic[/color]"
+text = "[center]Classic[/center]"
 fit_content = true
 scroll_active = false
 autowrap_mode = 0
+
+[node name="MusicNext" type="TextureButton" parent="Panel/MarginContainer/VBox/Row_Music"]
+unique_name_in_owner = true
+layout_mode = 2
+texture_normal = SubResource("AtlasTexture_right_normal")
+texture_pressed = SubResource("AtlasTexture_right_pressed")
 
 [node name="Row_SFX" type="HBoxContainer" parent="Panel/MarginContainer/VBox"]
-custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 theme_override_constants/separation = 8
-alignment = 1
 
-[node name="GapRight" type="Control" parent="Panel/MarginContainer/VBox/Row_SFX"]
-custom_minimum_size = Vector2(5, 0)
+[node name="SFXIcon" type="TextureRect" parent="Panel/MarginContainer/VBox/Row_SFX"]
 layout_mode = 2
+size_flags_vertical = 4
+texture = ExtResource("7_sfx")
 
-[node name="SFXLabel" type="RichTextLabel" parent="Panel/MarginContainer/VBox/Row_SFX"]
-unique_name_in_owner = true
-clip_contents = false
-custom_minimum_size = Vector2(125, 0)
-layout_mode = 2
-theme = ExtResource("4_theme")
-theme_override_colors/font_shadow_color = Color(1, 0.780392, 0.458824, 1)
-theme_override_font_sizes/normal_font_size = 38
-bbcode_enabled = true
-text = "[color=white]S[/color][color=#54fcfc]FX[/color]"
-fit_content = true
-scroll_active = false
-autowrap_mode = 0
-
-[node name="GapRight2" type="Control" parent="Panel/MarginContainer/VBox/Row_SFX"]
-custom_minimum_size = Vector2(5, 0)
-layout_mode = 2
-
-[node name="SFXToggle" type="TextureButton" parent="Panel/MarginContainer/VBox/Row_SFX"]
+[node name="SFXPrev" type="TextureButton" parent="Panel/MarginContainer/VBox/Row_SFX"]
 unique_name_in_owner = true
 layout_mode = 2
-texture_normal = ExtResource("2_btn")
-texture_pressed = ExtResource("3_btnp")
+texture_normal = SubResource("AtlasTexture_left_normal")
+texture_pressed = SubResource("AtlasTexture_left_pressed")
 
 [node name="SFXValueLabel" type="RichTextLabel" parent="Panel/MarginContainer/VBox/Row_SFX"]
 unique_name_in_owner = true
 clip_contents = false
 custom_minimum_size = Vector2(130, 0)
 layout_mode = 2
+size_flags_vertical = 4
 theme = ExtResource("4_theme")
 theme_override_colors/font_shadow_color = Color(1, 0.780392, 0.458824, 1)
 theme_override_font_sizes/normal_font_size = 38
 bbcode_enabled = true
-text = "[color=white]O[/color][color=#54fcfc]n[/color]"
+text = "[center]On[/center]"
 fit_content = true
 scroll_active = false
 autowrap_mode = 0
+
+[node name="SFXNext" type="TextureButton" parent="Panel/MarginContainer/VBox/Row_SFX"]
+unique_name_in_owner = true
+layout_mode = 2
+texture_normal = SubResource("AtlasTexture_right_normal")
+texture_pressed = SubResource("AtlasTexture_right_pressed")
 
 [node name="Row_Graphics" type="HBoxContainer" parent="Panel/MarginContainer/VBox"]
 visible = false
@@ -227,156 +224,120 @@ scroll_active = false
 autowrap_mode = 0
 
 [node name="Row_Language" type="HBoxContainer" parent="Panel/MarginContainer/VBox"]
-custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 theme_override_constants/separation = 8
-alignment = 1
 
-[node name="GapRight" type="Control" parent="Panel/MarginContainer/VBox/Row_Language"]
-custom_minimum_size = Vector2(5, 0)
+[node name="LanguageIcon" type="TextureRect" parent="Panel/MarginContainer/VBox/Row_Language"]
 layout_mode = 2
+size_flags_vertical = 4
+texture = ExtResource("8_language")
 
-[node name="LanguageLabel" type="RichTextLabel" parent="Panel/MarginContainer/VBox/Row_Language"]
-unique_name_in_owner = true
-clip_contents = false
-custom_minimum_size = Vector2(125, 0)
-layout_mode = 2
-theme = ExtResource("4_theme")
-theme_override_colors/font_shadow_color = Color(1, 0.780392, 0.458824, 1)
-theme_override_font_sizes/normal_font_size = 38
-bbcode_enabled = true
-text = "[color=white]L[/color][color=#54fcfc]anguage[/color]"
-fit_content = true
-scroll_active = false
-autowrap_mode = 0
-
-[node name="GapRight2" type="Control" parent="Panel/MarginContainer/VBox/Row_Language"]
-custom_minimum_size = Vector2(5, 0)
-layout_mode = 2
-
-[node name="LanguageToggle" type="TextureButton" parent="Panel/MarginContainer/VBox/Row_Language"]
+[node name="LanguagePrev" type="TextureButton" parent="Panel/MarginContainer/VBox/Row_Language"]
 unique_name_in_owner = true
 layout_mode = 2
-texture_normal = ExtResource("2_btn")
-texture_pressed = ExtResource("3_btnp")
+texture_normal = SubResource("AtlasTexture_left_normal")
+texture_pressed = SubResource("AtlasTexture_left_pressed")
 
 [node name="LanguageValueLabel" type="RichTextLabel" parent="Panel/MarginContainer/VBox/Row_Language"]
 unique_name_in_owner = true
 clip_contents = false
 custom_minimum_size = Vector2(130, 0)
 layout_mode = 2
+size_flags_vertical = 4
 theme = ExtResource("4_theme")
 theme_override_colors/font_shadow_color = Color(1, 0.780392, 0.458824, 1)
 theme_override_font_sizes/normal_font_size = 38
 bbcode_enabled = true
-text = "[color=white]E[/color][color=#54fcfc]N[/color]"
+text = "[center]EN[/center]"
 fit_content = true
 scroll_active = false
 autowrap_mode = 0
+
+[node name="LanguageNext" type="TextureButton" parent="Panel/MarginContainer/VBox/Row_Language"]
+unique_name_in_owner = true
+layout_mode = 2
+texture_normal = SubResource("AtlasTexture_right_normal")
+texture_pressed = SubResource("AtlasTexture_right_pressed")
 
 [node name="Row_SolveAnim" type="HBoxContainer" parent="Panel/MarginContainer/VBox"]
-custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 theme_override_constants/separation = 8
-alignment = 1
 
-[node name="GapRight" type="Control" parent="Panel/MarginContainer/VBox/Row_SolveAnim"]
-custom_minimum_size = Vector2(5, 0)
+[node name="SolveAnimIcon" type="TextureRect" parent="Panel/MarginContainer/VBox/Row_SolveAnim"]
 layout_mode = 2
+size_flags_vertical = 4
+texture = ExtResource("9_animation")
 
-[node name="SolveAnimLabel" type="RichTextLabel" parent="Panel/MarginContainer/VBox/Row_SolveAnim"]
-unique_name_in_owner = true
-clip_contents = false
-custom_minimum_size = Vector2(125, 0)
-layout_mode = 2
-theme = ExtResource("4_theme")
-theme_override_colors/font_shadow_color = Color(1, 0.780392, 0.458824, 1)
-theme_override_font_sizes/normal_font_size = 38
-bbcode_enabled = true
-text = "[color=white]S[/color][color=#54fcfc]olve Anim[/color]"
-fit_content = true
-scroll_active = false
-autowrap_mode = 0
-
-[node name="GapRight2" type="Control" parent="Panel/MarginContainer/VBox/Row_SolveAnim"]
-custom_minimum_size = Vector2(5, 0)
-layout_mode = 2
-
-[node name="SolveAnimToggle" type="TextureButton" parent="Panel/MarginContainer/VBox/Row_SolveAnim"]
+[node name="SolveAnimPrev" type="TextureButton" parent="Panel/MarginContainer/VBox/Row_SolveAnim"]
 unique_name_in_owner = true
 layout_mode = 2
-texture_normal = ExtResource("2_btn")
-texture_pressed = ExtResource("3_btnp")
+texture_normal = SubResource("AtlasTexture_left_normal")
+texture_pressed = SubResource("AtlasTexture_left_pressed")
 
 [node name="SolveAnimValueLabel" type="RichTextLabel" parent="Panel/MarginContainer/VBox/Row_SolveAnim"]
 unique_name_in_owner = true
 clip_contents = false
 custom_minimum_size = Vector2(130, 0)
 layout_mode = 2
+size_flags_vertical = 4
 theme = ExtResource("4_theme")
 theme_override_colors/font_shadow_color = Color(1, 0.780392, 0.458824, 1)
 theme_override_font_sizes/normal_font_size = 38
 bbcode_enabled = true
-text = "[color=white]O[/color][color=#54fcfc]n[/color]"
+text = "[center]On[/center]"
 fit_content = true
 scroll_active = false
 autowrap_mode = 0
+
+[node name="SolveAnimNext" type="TextureButton" parent="Panel/MarginContainer/VBox/Row_SolveAnim"]
+unique_name_in_owner = true
+layout_mode = 2
+texture_normal = SubResource("AtlasTexture_right_normal")
+texture_pressed = SubResource("AtlasTexture_right_pressed")
 
 [node name="Row_TurnAnim" type="HBoxContainer" parent="Panel/MarginContainer/VBox"]
-custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 theme_override_constants/separation = 8
-alignment = 1
 
-[node name="GapRight" type="Control" parent="Panel/MarginContainer/VBox/Row_TurnAnim"]
-custom_minimum_size = Vector2(5, 0)
+[node name="TurnAnimIcon" type="TextureRect" parent="Panel/MarginContainer/VBox/Row_TurnAnim"]
 layout_mode = 2
+size_flags_vertical = 4
+texture = ExtResource("10_turn")
 
-[node name="TurnAnimLabel" type="RichTextLabel" parent="Panel/MarginContainer/VBox/Row_TurnAnim"]
-unique_name_in_owner = true
-clip_contents = false
-custom_minimum_size = Vector2(125, 0)
-layout_mode = 2
-theme = ExtResource("4_theme")
-theme_override_colors/font_shadow_color = Color(1, 0.780392, 0.458824, 1)
-theme_override_font_sizes/normal_font_size = 38
-bbcode_enabled = true
-text = "[color=white]T[/color][color=#54fcfc]urn Anim[/color]"
-fit_content = true
-scroll_active = false
-autowrap_mode = 0
-
-[node name="GapRight2" type="Control" parent="Panel/MarginContainer/VBox/Row_TurnAnim"]
-custom_minimum_size = Vector2(5, 0)
-layout_mode = 2
-
-[node name="TurnAnimToggle" type="TextureButton" parent="Panel/MarginContainer/VBox/Row_TurnAnim"]
+[node name="TurnAnimPrev" type="TextureButton" parent="Panel/MarginContainer/VBox/Row_TurnAnim"]
 unique_name_in_owner = true
 layout_mode = 2
-texture_normal = ExtResource("2_btn")
-texture_pressed = ExtResource("3_btnp")
+texture_normal = SubResource("AtlasTexture_left_normal")
+texture_pressed = SubResource("AtlasTexture_left_pressed")
 
 [node name="TurnAnimValueLabel" type="RichTextLabel" parent="Panel/MarginContainer/VBox/Row_TurnAnim"]
 unique_name_in_owner = true
 clip_contents = false
 custom_minimum_size = Vector2(130, 0)
 layout_mode = 2
+size_flags_vertical = 4
 theme = ExtResource("4_theme")
 theme_override_colors/font_shadow_color = Color(1, 0.780392, 0.458824, 1)
 theme_override_font_sizes/normal_font_size = 38
 bbcode_enabled = true
-text = "[color=white]O[/color][color=#54fcfc]ff[/color]"
+text = "[center]On[/center]"
 fit_content = true
 scroll_active = false
 autowrap_mode = 0
 
+[node name="TurnAnimNext" type="TextureButton" parent="Panel/MarginContainer/VBox/Row_TurnAnim"]
+unique_name_in_owner = true
+layout_mode = 2
+texture_normal = SubResource("AtlasTexture_right_normal")
+texture_pressed = SubResource("AtlasTexture_right_pressed")
+
 [node name="GapRight3" type="Control" parent="Panel/MarginContainer/VBox"]
-custom_minimum_size = Vector2(0, 0)
 layout_mode = 2
 
 [node name="Row_Close" type="HBoxContainer" parent="Panel/MarginContainer/VBox"]
-custom_minimum_size = Vector2(0, 52)
+custom_minimum_size = Vector2(278, 52)
 layout_mode = 2
+size_flags_horizontal = 0
 theme_override_constants/separation = 8
 alignment = 1
 
@@ -390,11 +351,11 @@ texture_pressed = ExtResource("3_btnp")
 [node name="CloseLabel" type="RichTextLabel" parent="Panel/MarginContainer/VBox/Row_Close"]
 unique_name_in_owner = true
 clip_contents = false
-custom_minimum_size = Vector2(100, 0)
+custom_minimum_size = Vector2(278, 0)
 layout_mode = 2
 theme = ExtResource("4_theme")
 theme_override_colors/font_shadow_color = Color(1, 0.780392, 0.458824, 1)
-theme_override_font_sizes/normal_font_size = 56
+theme_override_font_sizes/normal_font_size = 48
 bbcode_enabled = true
 text = "[color=white]C[/color][color=#54fcfc]lose[/color]"
 fit_content = true

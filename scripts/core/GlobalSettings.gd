@@ -21,6 +21,7 @@ var return_from_game: bool = false
 
 const SETTINGS_PATH := "user://settings.cfg"
 
+var persist_settings: bool = true # Tests turn this off so they can't overwrite the player's settings
 var _pointer_sprite: Sprite2D
 
 func _ready() -> void:
@@ -55,6 +56,8 @@ func _notification(what: int) -> void:
 		_pointer_sprite.visible = true
 
 func save_settings() -> void:
+	if not persist_settings:
+		return
 	var cfg := ConfigFile.new()
 	cfg.set_value("game", "difficulty_index", last_menu_difficulty_index)
 	cfg.set_value("audio", "music_style", music_style)
