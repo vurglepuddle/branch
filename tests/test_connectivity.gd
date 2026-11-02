@@ -150,16 +150,13 @@ func _test_any_connected_arrangement_wins_once(grid: Node) -> void:
 		_fail("a tile turned after the win")
 
 	await process_frame
-	var timers: int = _count_timers(grid)
-	if timers == 0:
+	var effects: Node = grid._win_effects
+	if not is_instance_valid(effects):
 		_fail("the win sequence did not start")
 	grid.check_win_condition()
 	await process_frame
-	if _count_timers(grid) > timers:
+	if grid._win_effects != effects:
 		_fail("the win sequence started twice")
-
-func _count_timers(grid: Node) -> int:
-	return grid.get_children().filter(func(child): return child is Timer).size()
 
 # Empties the grid, then places the given tiles. Connections are set directly, so tile types only
 # need to be non-empty here.

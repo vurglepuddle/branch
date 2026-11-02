@@ -2,6 +2,7 @@ extends Node2D # this is grid.gd #
 
 const BranchType = preload("res://scripts/core/branch_types.gd").BranchType
 const PuzzleGenerator = preload("res://scripts/core/puzzle_generator.gd")
+const WinEffects = preload("res://scripts/core/win_effects.gd")
 const NEIGHBOR_OFFSETS: Array[Vector2i] = [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)] # UP, RIGHT, DOWN, LEFT
 const SOLVE_STEP_SECONDS: float = 0.035
 const POST_SOLVE_WAIT_SECONDS: float = 1.0
@@ -36,6 +37,7 @@ var all_connected = false
 var _construction_order: Array = [] # Every tile, source first, in the order the board was built
 
 var _game_hud: CanvasLayer
+var _win_effects: Node = null
 
 func _ready():
 	randomize()
@@ -85,6 +87,7 @@ func load_level_for_current_difficulty():
 	print_verbose("Grid settings: WxH=%sx%s, Toroidal=%s" % [grid_width, grid_height, self.is_toroidal_grid])
 	
 	_cancel_turns()
+	_stop_win_effects()
 	print_verbose("Clearing old branches...")
 	var children_to_remove = []
 	for child in get_children():
@@ -287,85 +290,29 @@ func check_win_condition():
 	if AudioManager:
 		AudioManager.play_victory_music()
 	call_deferred("start_leaf_spawn_sequence")
-	call_deferred("start_blossom_sequence")
+	call_deferred("_start_win_effects")
 
-func start_blossom_sequence():
-	var alive_terminal_branches = []
-	for x in range(grid_width):
-		for y in range(grid_height):
-			var branch = branches[x][y]
+func _start_win_effects() -> void:
+	var tips: Array = []
+	for column in branches:
+		for branch in column:
 			if branch.branch_type == BranchType.TERMINAL and branch.state == "alive":
-				alive_terminal_branches.append(branch)
+				tips.append(branch)
+	_win_effects = WinEffects.new()
+	add_child(_win_effects)
+	_win_effects.exit_allowed.connect(_on_win_exit_allowed)
+	_win_effects.start(tips, WinEffects.GLINT_SLOTS.get(current_difficulty_str, 1))
 
-	if alive_terminal_branches.size() == 0:
-		print_verbose("No alive terminal branches found to animate.")
-		# Proceed to next level or level complete screen logic here
-		# For example: show_level_complete_screen_after_delay(2.0)
-		is_level_complete_animation_playing = false # Reset flag
-		level_won_waiting_for_exit_input = true
-		return
-	# Shuffle the list to make the order random beyond the first few
-	alive_terminal_branches.shuffle()
-
-	var overall_animation_delay_accumulator: float = 0.0
-	var max_initial_delay: float = 4.0 # Max N seconds (was 5, reduced to make total time reasonable)
-	var max_subsequent_delay: float = 1.5 # Max Y seconds (was 3, reduced)
-
-	for i in range(alive_terminal_branches.size()):
-		var branch_to_animate: BranchNode = alive_terminal_branches[i]
-		var current_delay: float = 0.0
-
-		if i == 0: # First terminal branch
-			current_delay = randf_range(0.1, max_initial_delay) # Random delay between 0.1 and N
-		elif i == 1: # Second terminal branch
-
-			current_delay = randf_range(0.05, max_subsequent_delay) # Random delay between 0.05 and Y
-																  # (0.05 to avoid exact same time)
-		else: # Subsequent branches
-			# Shorter, more rapid, slightly overlapping delays
-			current_delay = randf_range(0.05, 0.5) # e.g., 0.05 to 0.5 seconds
-
-		var actual_start_delay = overall_animation_delay_accumulator + current_delay
-		
-		var individual_timer = Timer.new()
-		individual_timer.wait_time = actual_start_delay
-		individual_timer.one_shot = true
-
-		individual_timer.connect("timeout", Callable(self, "_play_single_blossom").bind(branch_to_animate, individual_timer))
-		add_child(individual_timer) # Timer needs to be in the scene tree to process
-		individual_timer.start()
-		
-		# Accumulate delay for the *start* of the next potential animation trigger
-		# This creates a cascading effect.
-		overall_animation_delay_accumulator += current_delay 
-		# If you want them more overlapped, make overall_animation_delay_accumulator increase by less,
-		# e.g., overall_animation_delay_accumulator += current_delay * 0.3
-
-	var cleanup_delay = overall_animation_delay_accumulator + 2.0 # 2 seconds for last animation to play out
-	var final_timer = Timer.new()
-	final_timer.wait_time = cleanup_delay
-	final_timer.one_shot = true
-	final_timer.connect("timeout", Callable(self, "_finish_level_complete_sequence").bind(final_timer))
-	add_child(final_timer)
-	final_timer.start()
-	#print("Blossom sequence initiated. Total estimated duration: ~%s seconds" % cleanup_delay)
-
-func _play_single_blossom(branch: BranchNode, timer_node: Timer):
-	if is_instance_valid(branch):
-		#print("Playing blossom for branch at: (%s, %s)" % [branch.grid_x, branch.grid_y])
-		branch.play_terminal_blossom() # Call the animation player on the branch
-	if is_instance_valid(timer_node):
-		timer_node.queue_free() # Clean up the timer
-
-func _finish_level_complete_sequence(timer_node: Timer):
-	print_verbose("Level complete animation sequence finished.")
-	is_level_complete_animation_playing = false # Reset this flag as animations are done
-	
+func _on_win_exit_allowed() -> void:
+	is_level_complete_animation_playing = false
 	level_won_waiting_for_exit_input = true
 	print_verbose("Grid: Now waiting for input to return to menu.")
 
-	if is_instance_valid(timer_node):
-		timer_node.queue_free()
+func _stop_win_effects() -> void:
+	if is_instance_valid(_win_effects):
+		_win_effects.stop()
+		_win_effects.queue_free()
+	_win_effects = null
 
 func start_leaf_spawn_sequence():
 	var eligible_leaf_branches = []
@@ -475,6 +422,7 @@ func _run_solve_animation() -> void:
 		_exit_to_main_menu()
 
 func _exit_to_main_menu() -> void:
+	_stop_win_effects()
 	level_won_waiting_for_exit_input = false
 	is_level_complete_animation_playing = true
 

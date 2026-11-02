@@ -102,28 +102,32 @@ var textures = {
 	}
 }
 
-func play_terminal_blossom():
-	var animation_name = ""
-	if connections[0] == 1: animation_name = "down_blossom"
-	elif connections[1] == 1: animation_name = "left_blossom"
-	elif connections[2] == 1: animation_name = "up_blossom"
-	elif connections[3] == 1: animation_name = "right_blossom"
-	else:
-		printerr("Terminal branch has no connections to determine blossom direction!")
-		return
-	
-	var anim_sprite = $AnimatedSprite2D # Get the node
-	if anim_sprite:
-		if anim_sprite.sprite_frames.has_animation(animation_name):
-			anim_sprite.visible = true # Make it visible NOW
-			anim_sprite.animation = animation_name # Set the animation
-			anim_sprite.play() # Play it from the beginning
-			#print("Branch at (%s,%s) playing animation: %s" % [grid_x, grid_y, animation_name])
-		else:
-			printerr("Branch at (%s,%s) animation '%s' not found in SpriteFrames." % [grid_x, grid_y, animation_name])
-	else:
-		printerr("Branch at (%s,%s) missing AnimatedSprite2D node!" % [grid_x, grid_y])
+# Which way a tip points, which names its flower clips: a tip whose port is up hangs down.
+func _tip_direction() -> String:
+	if connections[0] == 1: return "down"
+	if connections[1] == 1: return "left"
+	if connections[2] == 1: return "up"
+	return "right"
 
+# Pose 0 up to FULL_BLOOM_POSE is the opening clip, whose last drawing is held at full bloom. The
+# poses after that are the ripening clip, and running past the end keeps showing the finished fruit.
+func show_flower_pose(pose: int) -> void:
+	var clip: String = _tip_direction() + ("_blossom" if pose <= FULL_BLOOM_POSE else "_fruiting")
+	var frame: int = pose if pose <= FULL_BLOOM_POSE else pose - FULL_BLOOM_POSE - 1
+	var anim_sprite: AnimatedSprite2D = $AnimatedSprite2D
+	if anim_sprite.animation != clip:
+		anim_sprite.animation = clip
+	anim_sprite.frame = mini(frame, anim_sprite.sprite_frames.get_frame_count(clip) - 1)
+	anim_sprite.visible = true
+
+func show_glint(stage: int) -> void:
+	var star: AnimatedSprite2D = $FruitStar
+	star.position = FRUIT_CENTERS[_tip_direction()]
+	star.frame = stage
+	star.visible = true
+
+func hide_glint() -> void:
+	$FruitStar.visible = false
 
 # In-between drawings for animated turns, on one sheet of 84x68 cells. Each tile type has two cells in
 # a row, drawn for one starting rotation and turned to fit the others. A turning tile always shows its
@@ -142,6 +146,15 @@ const TURN_STAGES: int = 3 # The old drawing, the two in-betweens, then the real
 const TURN_SIDEWAYS_SCALE := Vector2(68.0 / 84.0, 84.0 / 68.0)
 
 static var _turn_textures: Dictionary = {}
+
+const FULL_BLOOM_POSE: int = 20
+# Where the finished fruit sits on each tip, relative to the middle of the tile.
+const FRUIT_CENTERS: Dictionary = {
+	"down": Vector2(9, 7),
+	"left": Vector2(-9, 7),
+	"up": Vector2(-9, -7),
+	"right": Vector2(9, -7),
+}
 
 # Default connections for rotation 0
 var connections = [1, 1, 0, 0]
@@ -166,6 +179,7 @@ signal turn_finished(x: int, y: int)
 
 func _ready():
 	set_process(false)
+	$FruitStar.z_index = 1 # Otherwise the fruit, next in the tree at the same z, draws over the glint
 	if sprite == null:
 		printerr("Error: Sprite2D node is missing!")
 		return
