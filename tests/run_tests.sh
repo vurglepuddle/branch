@@ -33,4 +33,5 @@ run test_win_effects.gd
 run test_scenes.gd
 run test_audio.gd
 run test_settings.gd
+run test_stars.gd
 exit "$status"
