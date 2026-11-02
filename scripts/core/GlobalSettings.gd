@@ -12,7 +12,7 @@ var sfx_enabled: bool = true
 var graphics_old: bool = false
 var language: String = "en"           # "en" | "ru"
 var give_up_animation: bool = true
-var turn_animation: bool = false
+var turn_animation: bool = true
 
 # Set by main_menu.gd before scene change; read and cleared by grid.gd on load.
 var pending_puzzle_data: Dictionary = {}
@@ -80,4 +80,4 @@ func load_settings() -> void:
 	graphics_old = cfg.get_value("graphics", "old", false)
 	language = cfg.get_value("ui", "language", "en")
 	give_up_animation = cfg.get_value("ui", "give_up_animation", true)
-	turn_animation = cfg.get_value("ui", "turn_animation", false)
+	turn_animation = cfg.get_value("ui", "turn_animation", true)

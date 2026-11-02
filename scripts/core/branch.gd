@@ -125,18 +125,17 @@ func play_terminal_blossom():
 		printerr("Branch at (%s,%s) missing AnimatedSprite2D node!" % [grid_x, grid_y])
 
 
-# In-between drawings for animated turns, by tile type. Each is drawn for one starting rotation and
-# turned to fit the others. A turning tile always shows its dead drawings. Types not listed turn instantly.
-# Frame A is 82 wide because frame B starts at x=82 on the sheet; the margin restores the tile's width.
+# In-between drawings for animated turns, on one sheet of 84x68 cells. Each tile type has two cells in
+# a row, drawn for one starting rotation and turned to fit the others. A turning tile always shows its
+# dead drawings. The export trimmed one empty column off the left, so cell N starts at x = 84 * N - 1.
+const TURN_SHEET: Texture2D = preload("res://sprites/branch_turn.png")
+const TURN_SHEET_LEFT_TRIM: int = 1
+const TURN_CELL_SIZE := Vector2i(84, 68)
 const TURN_DRAWINGS: Dictionary = {
-	BranchType.BEND: {
-		"sheet": preload("res://sprites/branch_turn.png"),
-		"drawn_rotation": 2,
-		"frames": [
-			{"region": Rect2(0, 0, 82, 68), "margin": Rect2(0, 0, 2, 0)},
-			{"region": Rect2(82, 0, 84, 68), "margin": Rect2()},
-		],
-	},
+	BranchType.BEND: {"first_cell": 0, "drawn_rotation": 2},
+	BranchType.TERMINAL: {"first_cell": 2, "drawn_rotation": 3},
+	BranchType.STRAIGHT: {"first_cell": 4, "drawn_rotation": 1},
+	BranchType.THREE: {"first_cell": 6, "drawn_rotation": 1},
 }
 const TURN_STAGE_MS: int = 35
 const TURN_STAGES: int = 3 # The old drawing, the two in-betweens, then the real quarter-turn
@@ -275,16 +274,25 @@ func _show_turn_drawing(index: int) -> void:
 
 static func _get_turn_textures(type: BranchType) -> Array:
 	if not _turn_textures.has(type):
-		var drawing: Dictionary = TURN_DRAWINGS[type]
 		var frames: Array = []
-		for frame in drawing["frames"]:
+		for i in range(2):
+			var x: int = (TURN_DRAWINGS[type]["first_cell"] + i) * TURN_CELL_SIZE.x - TURN_SHEET_LEFT_TRIM
+			# The first cell starts off the sheet, so the margin puts its trimmed column back.
+			var trimmed: int = maxi(0, -x)
 			var atlas := AtlasTexture.new()
-			atlas.atlas = drawing["sheet"]
-			atlas.region = frame["region"]
-			atlas.margin = frame["margin"]
+			atlas.atlas = TURN_SHEET
+			atlas.region = Rect2(x + trimmed, 0, TURN_CELL_SIZE.x - trimmed, TURN_CELL_SIZE.y)
+			atlas.margin = Rect2(trimmed, 0, trimmed, 0)
 			frames.append(atlas)
 		_turn_textures[type] = frames
 	return _turn_textures[type]
+
+# Compares connections, not rotation_index, because a straight tile looks solved at two rotations.
+func is_solved() -> bool:
+	var solved: Array = connections
+	for _i in range((solution_rotation_index - rotation_index + 4) % 4):
+		solved = rotate_connections(solved)
+	return solved == connections
 
 func solve_rotation() -> void:
 	var steps: int = (solution_rotation_index - rotation_index + 4) % 4

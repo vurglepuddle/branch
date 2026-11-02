@@ -19,6 +19,8 @@ func _initialize() -> void:
 func _run() -> void:
 	await process_frame
 	_settings = root.get_node("GlobalSettings")
+	# These tests click tiles and check the result straight away; test_turns covers the animation.
+	_settings.turn_animation = false
 
 	for diff in DIFFICULTIES:
 		var grid: Node = await _open_grid(diff)

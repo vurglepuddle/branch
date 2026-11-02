@@ -3,6 +3,8 @@ extends Node2D # this is grid.gd #
 const BranchType = preload("res://scripts/core/branch_types.gd").BranchType
 const PuzzleGenerator = preload("res://scripts/core/puzzle_generator.gd")
 const NEIGHBOR_OFFSETS: Array[Vector2i] = [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)] # UP, RIGHT, DOWN, LEFT
+const SOLVE_STEP_SECONDS: float = 0.035
+const POST_SOLVE_WAIT_SECONDS: float = 1.0
 # Reference to the Branch scene
 @export var BranchScene: PackedScene
 #@onready var audio_manager: Node = $AudioManager
@@ -31,6 +33,7 @@ var grid_height
 var branches = []
 var source_tile = null
 var all_connected = false
+var _construction_order: Array = [] # Every tile, source first, in the order the board was built
 
 var _game_hud: CanvasLayer
 
@@ -111,6 +114,7 @@ func load_level_for_current_difficulty():
 		return
 	branches = puzzle.branches
 	source_tile = branches[puzzle.source_x][puzzle.source_y]
+	_construction_order = puzzle.construction_order
 	_place_tiles()
 	center_grid()
 
@@ -433,6 +437,7 @@ func _load_from_pending_puzzle() -> void:
 		return
 
 	source_tile = branches[src_x][src_y]
+	_construction_order = data["construction_order"]
 	_place_tiles()
 	center_grid()
 	if AudioManager:
@@ -452,50 +457,20 @@ func _on_give_up_requested() -> void:
 		return
 	_run_solve_animation()
 
-func _get_solve_order() -> Array:
-	var result: Array = []
-	var visited: Dictionary = {}
-	var queue: Array = []
-	var src := Vector2i(-1, -1)
-	for x in range(grid_width):
-		for y in range(grid_height):
-			if branches[x][y] == source_tile:
-				src = Vector2i(x, y)
-				break
-		if src.x >= 0:
-			break
-	if src.x < 0:
-		return result
-	queue.append(src)
-	visited[src] = true
-	while not queue.is_empty():
-		var pos: Vector2i = queue.pop_front()
-		if branches[pos.x][pos.y].branch_type != BranchType.EMPTY:
-			result.append(pos)
-		for dir in [Vector2i(0,-1), Vector2i(1,0), Vector2i(0,1), Vector2i(-1,0)]:
-			var nx: int = pos.x + dir.x
-			var ny: int = pos.y + dir.y
-			if is_toroidal_grid:
-				nx = ((nx % grid_width) + grid_width) % grid_width
-				ny = ((ny % grid_height) + grid_height) % grid_height
-			elif nx < 0 or nx >= grid_width or ny < 0 or ny >= grid_height:
-				continue
-			var next := Vector2i(nx, ny)
-			if not visited.has(next) and branches[nx][ny].branch_type != BranchType.EMPTY:
-				visited[next] = true
-				queue.append(next)
-	return result
+# Tiles the player already has right are skipped, so giving up on a nearly solved board is quick.
+func _get_tiles_to_solve() -> Array:
+	return _construction_order.filter(func(pos): return not branches[pos.x][pos.y].is_solved())
 
 func _run_solve_animation() -> void:
-	for pos in _get_solve_order():
-		await get_tree().create_timer(0.07).timeout
+	for pos in _get_tiles_to_solve():
+		await get_tree().create_timer(SOLVE_STEP_SECONDS).timeout
 		branches[pos.x][pos.y].solve_rotation()
 		refresh_connectivity()
 		if AudioManager:
 			AudioManager.play_beep_pitched(pos.y, grid_height)
 	is_level_complete_animation_playing = false
 	level_won_waiting_for_exit_input = true
-	await get_tree().create_timer(3.0).timeout
+	await get_tree().create_timer(POST_SOLVE_WAIT_SECONDS).timeout
 	if level_won_waiting_for_exit_input:
 		_exit_to_main_menu()
 

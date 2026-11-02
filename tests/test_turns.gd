@@ -29,7 +29,8 @@ func _run() -> void:
 	var saved_setting: bool = _settings.turn_animation
 	_settings.give_up_animation = true
 
-	_test_off_by_default()
+	_test_on_by_default()
+	_test_turn_sheet_layout()
 	_test_pointer()
 	await _test_settings_row()
 
@@ -38,8 +39,8 @@ func _run() -> void:
 	_settings.turn_animation = true
 	_test_stages(grid)
 	_test_every_orientation_uses_the_drawing(grid)
+	_test_drawings_match_their_tiles(grid)
 	_test_shows_dead_drawing_when_alive(grid)
-	_test_tiles_without_drawings_turn_instantly(grid)
 	_test_remembered_tap(grid)
 	_test_stall_skips_ahead(grid)
 	_test_state_change_during_turn(grid)
@@ -60,11 +61,26 @@ func _run() -> void:
 	print("test_turns: %s" % ("PASS" if _failures == 0 else "FAIL (%d)" % _failures))
 	quit(1 if _failures > 0 else 0)
 
-func _test_off_by_default() -> void:
+func _test_on_by_default() -> void:
 	var fresh: Node = load("res://scripts/core/GlobalSettings.gd").new()
-	if fresh.turn_animation:
-		_fail("turn animation should be off by default")
+	if not fresh.turn_animation:
+		_fail("turn animation should be on by default")
 	fresh.free()
+
+# A re-export that changes the trim would shift every drawing, so this asks for the table to be checked.
+func _test_turn_sheet_layout() -> void:
+	var sheet: Texture2D = BranchNode.TURN_SHEET
+	var cells: int = BranchNode.TURN_DRAWINGS.size() * 2
+	if sheet.get_width() + BranchNode.TURN_SHEET_LEFT_TRIM != cells * BranchNode.TURN_CELL_SIZE.x or sheet.get_height() != BranchNode.TURN_CELL_SIZE.y:
+		_fail("branch_turn.png is %dx%d, so TURN_SHEET_LEFT_TRIM or TURN_DRAWINGS in branch.gd needs updating" % [sheet.get_width(), sheet.get_height()])
+		return
+	var image: Image = sheet.get_image()
+	for type in BranchNode.TURN_DRAWINGS:
+		for frame in BranchNode._get_turn_textures(type):
+			if frame.get_size() != Vector2(BranchNode.TURN_CELL_SIZE):
+				_fail("a turn drawing is %s, it should fill the tile" % frame.get_size())
+			if image.get_region(Rect2i(frame.region)).is_invisible():
+				_fail("a turn cell at %s is blank" % frame.region)
 
 func _test_pointer() -> void:
 	var pointer: Sprite2D = _settings._pointer_sprite
@@ -136,24 +152,65 @@ func _test_stages(grid: Node) -> void:
 
 func _test_every_orientation_uses_the_drawing(grid: Node) -> void:
 	_build_board(grid)
-	var bend: Node = _tile(grid, BEND_CELL)
-	var connections: Array = [1, 1, 0, 0]
-	for rotation_index in range(4):
-		bend.rotation_index = rotation_index
-		bend.connections = connections.duplicate()
-		bend.update_texture()
-		bend.start_turn(1000)
-		bend._advance_turn(1040)
-		var expected: float = deg_to_rad(90.0 * (rotation_index - 2))
-		if not is_equal_approx(bend.sprite.rotation, expected):
-			_fail("rotation %d: the drawing is turned %.0f degrees" % [rotation_index, rad_to_deg(bend.sprite.rotation)])
-		_check_drawing_stays_in_cell(bend, rotation_index)
-		bend._advance_turn(1075)
-		_check_drawing_stays_in_cell(bend, rotation_index)
-		bend.cancel_turn()
-		if bend.sprite.rotation != 0.0 or bend.sprite.texture != bend.textures[BranchType.BEND][bend.state][rotation_index]:
-			_fail("rotation %d: cancelling should restore the normal sprite" % rotation_index)
-		connections = bend.rotate_connections(connections)
+	var tile: Node = _tile(grid, BEND_CELL)
+	var canonical: Dictionary = {
+		BranchType.BEND: [1, 1, 0, 0],
+		BranchType.TERMINAL: [1, 0, 0, 0],
+		BranchType.STRAIGHT: [1, 0, 1, 0],
+		BranchType.THREE: [1, 1, 1, 0],
+	}
+	for type in canonical:
+		tile.branch_type = type
+		var connections: Array = canonical[type]
+		for rotation_index in range(4):
+			tile.rotation_index = rotation_index
+			tile.connections = connections.duplicate()
+			tile.update_texture()
+			if not tile.can_animate_turn():
+				_fail("tile type %d has no turn drawings" % type)
+			tile.start_turn(1000)
+			tile._advance_turn(1040)
+			var expected: float = deg_to_rad(90.0 * (rotation_index - BranchNode.TURN_DRAWINGS[type]["drawn_rotation"]))
+			if not is_equal_approx(tile.sprite.rotation, expected):
+				_fail("type %d rotation %d: the drawing is turned %.0f degrees" % [type, rotation_index, rad_to_deg(tile.sprite.rotation)])
+			_check_drawing_stays_in_cell(tile, rotation_index)
+			tile._advance_turn(1075)
+			_check_drawing_stays_in_cell(tile, rotation_index)
+			tile.cancel_turn()
+			if tile.sprite.rotation != 0.0 or tile.sprite.texture != tile.textures[type][tile.state][rotation_index]:
+				_fail("type %d rotation %d: cancelling should restore the normal sprite" % [type, rotation_index])
+			connections = tile.rotate_connections(connections)
+	tile.branch_type = BranchType.BEND
+
+# TURN_DRAWINGS says which orientation each drawing starts from, and nothing else in the game can
+# catch a wrong entry. So this compares pixels: the first drawing should sit nearest its starting
+# sprite and the second nearest the sprite it's turning into. Three-way tiles share a lot of ink
+# around the centre, so near-ties are allowed.
+func _test_drawings_match_their_tiles(grid: Node) -> void:
+	var tile: Node = _tile(grid, BEND_CELL)
+	for type in BranchNode.TURN_DRAWINGS:
+		var start: int = BranchNode.TURN_DRAWINGS[type]["drawn_rotation"]
+		var frames: Array = BranchNode._get_turn_textures(type)
+		var sprites: Array = tile.textures[type]["dead"]
+		for stage in range(2):
+			var drawing: Image = frames[stage].get_image()
+			drawing.convert(Image.FORMAT_RGBA8)
+			var best: int = 0
+			for sprite in sprites:
+				best = maxi(best, _overlap(drawing, sprite.get_image()))
+			var expected: int = (start + stage) % 4
+			var score: int = _overlap(drawing, sprites[expected].get_image())
+			if score < best * 0.95:
+				_fail("type %d drawing %d overlaps sprite %d by %d px, but another orientation by %d px, so its drawn_rotation looks wrong" % [type, stage, expected, score, best])
+
+func _overlap(drawing: Image, sprite: Image) -> int:
+	sprite.convert(Image.FORMAT_RGBA8)
+	var count: int = 0
+	for y in range(drawing.get_height()):
+		for x in range(drawing.get_width()):
+			if drawing.get_pixel(x, y).a > 0.5 and sprite.get_pixel(x, y).a > 0.5:
+				count += 1
+	return count
 
 func _check_drawing_stays_in_cell(bend: Node, rotation_index: int) -> void:
 	var cell := Rect2(-42, -34, 84, 68).grow(0.01)
@@ -174,14 +231,6 @@ func _test_shows_dead_drawing_when_alive(grid: Node) -> void:
 	if bend.sprite.texture != bend._get_turn_textures(BranchType.BEND)[0]:
 		_fail("an alive tile should show the same turn drawing")
 	bend.cancel_turn()
-
-func _test_tiles_without_drawings_turn_instantly(grid: Node) -> void:
-	_build_board(grid)
-	var straight: Node = _tile(grid, STRAIGHT_CELL)
-	var before: Array = straight.connections.duplicate()
-	grid._on_branch_clicked(STRAIGHT_CELL.x, STRAIGHT_CELL.y)
-	if straight.connections == before or straight.is_turning():
-		_fail("a tile type with no drawings should turn immediately")
 
 func _test_remembered_tap(grid: Node) -> void:
 	_build_board(grid)
