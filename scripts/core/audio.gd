@@ -27,10 +27,21 @@ signal music_display_changed(display_name: String)
 	"torrero": "res://audio/modern/TORERO_modern.mp3"
 }
 
+@export var difficulty_music_midi_new: Dictionary = {
+	"baby": "res://audio/Midi_beautiful/BABY_v7_loop.ogg",
+	"intern": "res://audio/Midi_beautiful/INTERN_v4_loop.ogg",
+	"profi": "res://audio/Midi_beautiful/PROFI_v3_loop.ogg",
+	"master": "res://audio/Midi_beautiful/MASTER_v3_loop.ogg",
+	"expert": "res://audio/Midi_beautiful/EXPERT_v5_loop.ogg",
+	"torrero": "res://audio/Midi_beautiful/TORERO_v6_loop.ogg"
+}
+
 @export var classic_menu_theme: AudioStream
 @export var modern_menu_theme: AudioStream
+@export var midi_new_menu_theme: AudioStream = preload("res://audio/Midi_beautiful/TITLE_v12_loop.ogg")
 @export var classic_victory_theme: AudioStream = preload("res://audio/midi/FLOWER.ogg")
 @export var modern_victory_theme: AudioStream = preload("res://audio/modern/FLOWER_modern.mp3")
+@export var midi_new_victory_theme: AudioStream = preload("res://audio/Midi_beautiful/FLOWER_v5_loop.ogg")
 
 # --- Audio Players ---
 var sfx_player: AudioStreamPlayer
@@ -44,7 +55,7 @@ var current_music_path: String = ""
 var music_change_pending: bool = false # Flag to handle rapid changes
 var _music_transition_tween: Tween
 
-enum MusicStyle { CLASSIC, MODERN }
+enum MusicStyle { CLASSIC, MODERN, MIDI_NEW }
 var current_music_style: MusicStyle = MusicStyle.CLASSIC
 var is_menu_music_off: bool = false # To handle the "Off" state for menu music explicitly
 
@@ -56,6 +67,7 @@ const DEFAULT_SFX_VOLUME_DB: float = 0.0
 const MODERN_BUTTON_VOLUME_DB: float = -10.0
 const STAR_TWINKLE_VOLUME_DB: float = -4.0
 const INITIAL_MUSIC_FADE_IN_DURATION: float = 1.5
+const MIDI_NEW_DIR: String = "res://audio/Midi_beautiful/"
 
 func _ready():
 	setup_audio_players()
@@ -89,26 +101,32 @@ func initialize_audio_settings():
 		"modern":
 			current_music_style = MusicStyle.MODERN
 			is_menu_music_off = false
+		"midi_new":
+			current_music_style = MusicStyle.MIDI_NEW
+			is_menu_music_off = false
 		"off":
 			is_menu_music_off = true
 	sfx_player.volume_db = DEFAULT_SFX_VOLUME_DB if sfx_enabled else MUSIC_MUTED_VOLUME_DB
 
 	_update_menu_music_on_state_change(true, INITIAL_MUSIC_FADE_IN_DURATION)
-	
-	var initial_display_name: String
+
+	emit_signal("music_display_changed", _music_display_name())
+
+func _music_display_name() -> String:
 	if is_menu_music_off:
-		initial_display_name = "Off"
-	elif current_music_style == MusicStyle.CLASSIC:
-		initial_display_name = "Classic"
-	else:
-		initial_display_name = "Modern"
-	
-	emit_signal("music_display_changed", initial_display_name)
+		return "Off"
+	match current_music_style:
+		MusicStyle.CLASSIC: return "Classic"
+		MusicStyle.MODERN: return "Modern"
+		_: return "Midi New"
+
+func _menu_themes() -> Array:
+	return [classic_menu_theme, modern_menu_theme, midi_new_menu_theme]
 
 
 func _on_music_track_finished():
 	if bg_player.has_meta("loop") and bg_player.get_meta("loop") == true and \
-	   not music_globally_muted and not (is_menu_music_off and bg_player.stream in [classic_menu_theme, modern_menu_theme]): # Check relevant states
+	   not music_globally_muted and not (is_menu_music_off and bg_player.stream in _menu_themes()): # Check relevant states
 		if is_instance_valid(bg_player.stream):
 			bg_player.play()
 		else:
@@ -232,25 +250,31 @@ func play_beep_pitched(y: int, _grid_height: int):
 		sfx_player.play()
 
 func toggle_music_style_and_state():
-	var display_name: String
-
-	if not is_menu_music_off:
-		if current_music_style == MusicStyle.CLASSIC:
-			current_music_style = MusicStyle.MODERN
-			display_name = "Modern"
-		elif current_music_style == MusicStyle.MODERN:
-			is_menu_music_off = true
-			display_name = "Off"
-	else: 
-		is_menu_music_off = false
-		current_music_style = MusicStyle.CLASSIC 
-		display_name = "Classic"
-
-	emit_signal("music_display_changed", display_name)
-	GlobalSettings.music_style = "off" if is_menu_music_off else ("classic" if current_music_style == MusicStyle.CLASSIC else "modern")
+	_advance_music_style()
+	emit_signal("music_display_changed", _music_display_name())
 	GlobalSettings.save_settings()
 	play_named_sfx("button_sound")
 	_update_menu_music_on_state_change()
+
+# Classic -> Modern -> Midi New -> Off -> Classic
+func _advance_music_style() -> void:
+	if is_menu_music_off:
+		is_menu_music_off = false
+		current_music_style = MusicStyle.CLASSIC
+	elif current_music_style == MusicStyle.CLASSIC:
+		current_music_style = MusicStyle.MODERN
+	elif current_music_style == MusicStyle.MODERN:
+		current_music_style = MusicStyle.MIDI_NEW
+	else:
+		is_menu_music_off = true
+
+	if is_menu_music_off:
+		GlobalSettings.music_style = "off"
+	else:
+		match current_music_style:
+			MusicStyle.CLASSIC: GlobalSettings.music_style = "classic"
+			MusicStyle.MODERN: GlobalSettings.music_style = "modern"
+			MusicStyle.MIDI_NEW: GlobalSettings.music_style = "midi_new"
 
 func _update_menu_music_on_state_change(fade_in: bool = true, duration: float = MUSIC_FADE_DURATION):
 	if music_globally_muted:
@@ -260,11 +284,11 @@ func _update_menu_music_on_state_change(fade_in: bool = true, duration: float = 
 
 	var new_track_stream: AudioStream = null
 	if not is_menu_music_off:
-		if current_music_style == MusicStyle.CLASSIC:
-			new_track_stream = classic_menu_theme
-		else:
-			new_track_stream = modern_menu_theme
-	_load_and_set_music_track_from_stream(new_track_stream, fade_in, true, duration) 
+		match current_music_style:
+			MusicStyle.CLASSIC: new_track_stream = classic_menu_theme
+			MusicStyle.MODERN: new_track_stream = modern_menu_theme
+			MusicStyle.MIDI_NEW: new_track_stream = midi_new_menu_theme
+	_load_and_set_music_track_from_stream(new_track_stream, fade_in, true, duration)
 
 func play_menu_music(fade_in: bool = true, duration: float = MUSIC_FADE_DURATION) -> void:
 	_update_menu_music_on_state_change(fade_in, duration)
@@ -276,11 +300,11 @@ func play_difficulty_music(difficulty_key: String, loop: bool = true, fade: bool
 		return
 
 	var music_lib: Dictionary
-	if current_music_style == MusicStyle.CLASSIC:
-		music_lib = difficulty_music
-	else: 
-		music_lib = difficulty_music_modern
-	
+	match current_music_style:
+		MusicStyle.CLASSIC: music_lib = difficulty_music
+		MusicStyle.MODERN: music_lib = difficulty_music_modern
+		MusicStyle.MIDI_NEW: music_lib = difficulty_music_midi_new
+
 	if not music_lib.has(difficulty_key):
 		printerr("AudioManager: Difficulty key '%s' not found in selected music library." % difficulty_key)
 		_load_and_set_music_track_from_path("", fade, loop, duration) 
@@ -294,9 +318,11 @@ func play_victory_music(loop: bool = true, fade: bool = true, duration: float = 
 		_load_and_set_music_track_from_stream(null, false, loop, duration)
 		return
 
-	var victory_stream: AudioStream = classic_victory_theme
-	if current_music_style == MusicStyle.MODERN:
-		victory_stream = modern_victory_theme
+	var victory_stream: AudioStream
+	match current_music_style:
+		MusicStyle.CLASSIC: victory_stream = classic_victory_theme
+		MusicStyle.MODERN: victory_stream = modern_victory_theme
+		MusicStyle.MIDI_NEW: victory_stream = midi_new_victory_theme
 	_load_and_set_music_track_from_stream(victory_stream, fade, loop, duration)
 
 func _load_and_set_music_track_from_stream(track_stream: AudioStream, fade_in: bool = true, loop: bool = true, duration: float = MUSIC_FADE_DURATION):
@@ -332,7 +358,7 @@ func _play_new_music_stream(track_stream: AudioStream, loop: bool, should_fade_i
 
 	if bg_player.stream == track_stream and bg_player.playing and not should_fade_in_new_track:
 		bg_player.stream_paused = music_globally_muted 
-		if not music_globally_muted and not (is_menu_music_off and bg_player.stream in [classic_menu_theme, modern_menu_theme]):
+		if not music_globally_muted and not (is_menu_music_off and bg_player.stream in _menu_themes()):
 			if bg_player.volume_db < MUSIC_TARGET_VOLUME_DB - 1.0: 
 				bg_player.volume_db = MUSIC_TARGET_VOLUME_DB
 		return
@@ -340,6 +366,9 @@ func _play_new_music_stream(track_stream: AudioStream, loop: bool, should_fade_i
 	bg_player.stop() 
 
 	if is_instance_valid(track_stream):
+		# Midi New tracks are cut to loop, so repeat them seamlessly instead of restarting on "finished".
+		if track_stream is AudioStreamOggVorbis and track_stream.resource_path.begins_with(MIDI_NEW_DIR):
+			track_stream.loop = loop
 		bg_player.stream = track_stream
 		if should_fade_in_new_track and not music_globally_muted:
 			bg_player.volume_db = MUSIC_MUTED_VOLUME_DB 
@@ -386,7 +415,7 @@ func toggle_global_music_mute():
 			print_verbose("AudioManager: Music GLOBALLY MUTED")
 		else:
 			bg_player.stream_paused = false
-			if not (is_menu_music_off and bg_player.stream in [classic_menu_theme, modern_menu_theme]):
+			if not (is_menu_music_off and bg_player.stream in _menu_themes()):
 				if bg_player.playing and bg_player.stream != null: 
 					bg_player.volume_db = MUSIC_TARGET_VOLUME_DB
 			print_verbose("AudioManager: Music GLOBALLY UNMUTED")

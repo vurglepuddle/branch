@@ -6,7 +6,7 @@ const POINTER_HOTSPOT: Vector2 = Vector2.ZERO
 var current_difficulty: String = "baby"
 var last_menu_difficulty_index: int = 0
 
-var music_style: String = "classic"   # "classic" | "modern" | "off"
+var music_style: String = "classic"   # "classic" | "modern" | "midi_new" | "off"
 var sfx_enabled: bool = true
 var graphics_old: bool = false
 var language: String = "en"           # "en" | "ru"

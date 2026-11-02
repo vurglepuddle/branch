@@ -27,4 +27,5 @@ run() {
 
 run test_generator.gd "$BOARDS"
 run test_scenes.gd
+run test_audio.gd
 exit "$status"

@@ -51,6 +51,7 @@ func _fmt(text: String) -> String:
 func _music_value_text() -> String:
 	match GlobalSettings.music_style:
 		"modern": return Locale.t("modern")
+		"midi_new": return Locale.t("midi_new")
 		"off":    return Locale.t("off")
 		_:        return Locale.t("classic")
 
