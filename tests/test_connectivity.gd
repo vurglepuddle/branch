@@ -111,10 +111,13 @@ func _test_ignored_clicks(grid: Node) -> void:
 	_build_board(grid, {source: [0, 1, 0, 0], other: [1, 0, 0, 0]}, source, false)
 	grid.refresh_connectivity()
 
-	grid._on_branch_clicked(4, 4) # Empty cell
-	var empty_tile: Node = grid.branches[4][4]
-	if empty_tile.rotation_index != 0 or empty_tile.connections != [0, 0, 0, 0]:
-		_fail("clicking an empty cell changed it")
+	# An empty tile quietly resets its own rotation, so the beep's pitch is what gives a bad click away.
+	var audio: Node = root.get_node("AudioManager")
+	audio.sfx_enabled = true
+	audio.sfx_player.pitch_scale = 1.0
+	grid._on_branch_clicked(4, 4)
+	if audio.sfx_player.pitch_scale != 1.0:
+		_fail("clicking an empty cell played a beep")
 
 	var hud: Node = grid._game_hud
 	hud.panel_is_open = true
