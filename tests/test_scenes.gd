@@ -10,8 +10,6 @@ const W: int = 6
 const H: int = 17
 const TIME_SCALE: float = 8.0
 const WAIT_LIMIT_MS: int = 60000
-# Each grid and each menu start leaks its generator Node today. Phase 2 removes this: set it to 0 then.
-const KNOWN_LEAKED_GENERATORS: int = 30
 
 var _failures: int = 0
 var _settings: Node
@@ -28,6 +26,7 @@ func _run() -> void:
 	Engine.time_scale = TIME_SCALE
 
 	await _test_grid_fallback_entry()
+	await _test_generation_failure()
 	await _test_menu_round_trips()
 	_settings.turn_animation = true
 	await _test_menu_round_trips()
@@ -36,8 +35,8 @@ func _run() -> void:
 	for _i in range(10):
 		await process_frame
 	var orphans: int = int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT))
-	if orphans != KNOWN_LEAKED_GENERATORS:
-		_fail("%d orphan nodes at the end, expected %d" % [orphans, KNOWN_LEAKED_GENERATORS])
+	if orphans != 0:
+		_fail("%d orphan nodes at the end" % orphans)
 		Node.print_orphan_nodes()
 	print("test_scenes: %s" % ("PASS" if _failures == 0 else "FAIL (%d)" % _failures))
 	quit(1 if _failures > 0 else 0)
@@ -57,6 +56,40 @@ func _test_grid_fallback_entry() -> void:
 		current_scene = null
 		grid.queue_free()
 		await process_frame
+
+# Neither entry point should leave a broken board up if generation fails.
+func _test_generation_failure() -> void:
+	var menu: Node = load("res://scenes/main_menu.tscn").instantiate()
+	root.add_child(menu)
+	current_scene = menu
+	await _wait_frames(3)
+	menu.difficulty_levels = ["no_such_difficulty"]
+	menu.current_difficulty_index = 0
+	await menu._start_transition()
+	if not is_instance_valid(menu) or menu._transitioning or menu.start_button.disabled:
+		_fail("a failed generation should leave the menu usable")
+	current_scene = null
+	menu.queue_free()
+	await process_frame
+
+	_settings.current_difficulty = "baby"
+	_settings.pending_puzzle_data = {}
+	var grid: Node = load("res://scenes/Grid.tscn").instantiate()
+	root.add_child(grid)
+	current_scene = grid
+	await _wait_frames(2)
+	var grid_id: int = grid.get_instance_id()
+	grid._on_generation_failed()
+	if not await _wait_for_freed(grid_id, "the grid to leave after a failed generation"):
+		return
+	await _wait_frames(3)
+	menu = current_scene
+	if menu == null or menu.scene_file_path != "res://scenes/main_menu.tscn":
+		_fail("a failed generation in the grid should return to the menu")
+		return
+	current_scene = null
+	menu.queue_free()
+	await process_frame
 
 # Menu -> game -> win or give up -> menu, the path players actually take.
 func _test_menu_round_trips() -> void:

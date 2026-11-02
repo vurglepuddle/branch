@@ -3,7 +3,6 @@ extends Node2D # this is grid.gd #
 const BranchType = preload("res://scripts/core/branch_types.gd").BranchType
 const PuzzleGenerator = preload("res://scripts/core/puzzle_generator.gd")
 const NEIGHBOR_OFFSETS: Array[Vector2i] = [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)] # UP, RIGHT, DOWN, LEFT
-var generator = PuzzleGenerator.new()
 # Reference to the Branch scene
 @export var BranchScene: PackedScene
 #@onready var audio_manager: Node = $AudioManager
@@ -79,15 +78,9 @@ func load_level_for_current_difficulty():
 	
 	grid_width = current_difficulty_settings.size[0]
 	grid_height = current_difficulty_settings.size[1]
-	self.is_toroidal_grid = (self.current_difficulty_str == "torrero")
+	self.is_toroidal_grid = current_difficulty_settings.wrap
 	print_verbose("Grid settings: WxH=%sx%s, Toroidal=%s" % [grid_width, grid_height, self.is_toroidal_grid])
 	
-	var prim_density_factor = current_difficulty_settings.prim_initial_density_factor
-	var prim_min_tiles = current_difficulty_settings.prim_min_tiles
-	var final_target_density = current_difficulty_settings.final_target_density_factor
-	var final_variation = current_difficulty_settings.final_density_variation_factor
-	var max_gen_attempts_for_level = current_difficulty_settings.max_gen_attempts
-
 	_cancel_turns()
 	print_verbose("Clearing old branches...")
 	var children_to_remove = []
@@ -112,26 +105,14 @@ func load_level_for_current_difficulty():
 		_game_hud.locked = false
 	print_verbose("Old branches cleared and state reset.")
 
-	var valid_cells: Dictionary = DifficultyLayouts.get_valid_cells(self.current_difficulty_str)
-	print_verbose("Calling init_branches...")
-	init_branches(grid_width, grid_height, BranchScene,
-				  prim_density_factor, prim_min_tiles,
-				  final_target_density, final_variation, self.is_toroidal_grid, max_gen_attempts_for_level,
-				  valid_cells)
-	print_verbose("init_branches call finished. Current branch count in array: %s" % branches.size())
-	
-	var actual_branch_children_count = 0
-	for child in get_children():
-		if child is BranchNode:
-			actual_branch_children_count += 1
-	print_verbose("Actual BranchNode children in scene tree after init_branches: %s" % actual_branch_children_count)
-
-	if actual_branch_children_count > 0:
-		print_verbose("Calling center_grid...")
-		center_grid()
-		print_verbose("center_grid call finished.")
-	else:
-		print_verbose("Skipping center_grid as no branches were added to the scene tree.")
+	var puzzle: Dictionary = PuzzleGenerator.create_puzzle(self.current_difficulty_str, BranchScene)
+	if puzzle.is_empty():
+		_on_generation_failed()
+		return
+	branches = puzzle.branches
+	source_tile = branches[puzzle.source_x][puzzle.source_y]
+	_place_tiles()
+	center_grid()
 
 	if AudioManager: # Ensure AudioManager is capitalized correctly if that's its autoload name
 		AudioManager.play_difficulty_music(self.current_difficulty_str)
@@ -203,159 +184,25 @@ func _process(_delta):
 		print_verbose("Test triggered for difficulty: %s" % self.current_difficulty_str)
 		#run_batch_generation_test(self.current_difficulty_str, 200)
 
-func init_branches(g_width: int, g_height: int, b_scene: PackedScene,
-				   initial_prim_density: float, min_prim_abs_tiles: int,
-				   target_final_density: float, final_density_variation: float,
-				   p_is_toroidal: bool, p_max_generation_attempts: int,
-				   p_valid_cells: Dictionary = {}) -> void:
+# Adds the generated tiles to the scene. Both ways of starting a puzzle end up here.
+func _place_tiles() -> void:
+	for x in range(grid_width):
+		for y in range(grid_height):
+			var b: BranchNode = branches[x][y]
+			b.position = Vector2(x * 84 + 42, y * 68 + 34)
+			b.branch_clicked.connect(_on_branch_clicked)
+			b.branch_right_clicked.connect(_on_branch_right_clicked)
+			b.turn_finished.connect(_on_branch_turn_finished)
+			add_child(b)
+	call_deferred("refresh_connectivity")
 
-	var puzzle_data = null
-	var actual_final_active_tile_count = 0
-	var num_total_cells_on_grid: int = p_valid_cells.size() if not p_valid_cells.is_empty() else g_width * g_height
-
-	# Calculate the desired *range* for the final number of active tiles
-	var base_desired_final_tiles = floor(num_total_cells_on_grid * target_final_density)
-	var variation_amount = floor(base_desired_final_tiles * final_density_variation)
-	
-	var min_acceptable_final_tiles = max(1, base_desired_final_tiles - variation_amount)
-	var max_acceptable_final_tiles = base_desired_final_tiles + variation_amount 
-	min_acceptable_final_tiles = min(min_acceptable_final_tiles, num_total_cells_on_grid) 
-	max_acceptable_final_tiles = min(max_acceptable_final_tiles, num_total_cells_on_grid) 
-	min_acceptable_final_tiles = min(min_acceptable_final_tiles, max_acceptable_final_tiles)
-
-	print_verbose("Targeting final active tiles: approx %s (min: %s, max: %s)" % [base_desired_final_tiles, min_acceptable_final_tiles, max_acceptable_final_tiles])
-	# Removed the next print line as it's now better placed inside the loop or before calling the generator.
-
-	var attempts = 0
-	#var max_generation_attempts = 35 
-
-	while attempts < p_max_generation_attempts:
-		attempts += 1
-		print_verbose("Generation attempt #%s (Prim's target: density_factor=%s, min_tiles=%s)..." % [attempts, initial_prim_density, min_prim_abs_tiles])
-		puzzle_data = generator.generate_solvable_puzzle(g_width, g_height, b_scene,
-														 initial_prim_density, min_prim_abs_tiles,
-														 p_is_toroidal, p_valid_cells)
-		
-		actual_final_active_tile_count = 0 
-		if puzzle_data and puzzle_data.has("branches"):
-			actual_final_active_tile_count = generator.get_active_tile_count(puzzle_data)
-		else:
-			printerr("Puzzle generation failed to return valid branches structure on attempt %s." % attempts)
-			if attempts < p_max_generation_attempts:
-				continue 
-			else:
-				break 
-
-		print_verbose("Generated puzzle with %s active tiles." % actual_final_active_tile_count)
-
-		if generator.is_puzzle_initially_solved(puzzle_data):
-			print_verbose("Generated puzzle was already solved. Retrying...")
-			if attempts < p_max_generation_attempts:
-				generator.free_puzzle_nodes(puzzle_data)
-				puzzle_data = {}
-				continue
-
-		if actual_final_active_tile_count >= min_acceptable_final_tiles:
-			print_verbose("Acceptable density achieved.")
-			break 
-		
-		if attempts < p_max_generation_attempts:
-			print_verbose("Too sparse (min desired: %s). Retrying..." % min_acceptable_final_tiles)
-			generator.free_puzzle_nodes(puzzle_data)
-			puzzle_data = {}
-			continue
-
-	if actual_final_active_tile_count < min_acceptable_final_tiles:
-		print_verbose("Warning: Could not achieve desired minimum density (%s) after %s attempts. Proceeding with %s active tiles." % [min_acceptable_final_tiles, p_max_generation_attempts, actual_final_active_tile_count])
-	if puzzle_data and generator.is_puzzle_initially_solved(puzzle_data):
-		print_verbose("Warning: Final generated puzzle was initially solved. Rotating one tile out of solution.")
-		generator.ensure_puzzle_not_initially_solved(puzzle_data)
-
-	if not puzzle_data or not puzzle_data.has("branches") or not puzzle_data.has("source_x"):
-		printerr("FATAL: Puzzle data is invalid after all generation attempts!")
-		var dummy_branch = b_scene.instantiate()
-		dummy_branch.branch_type = BranchType.TERMINAL
-		dummy_branch.connections = [1,0,0,0]; dummy_branch.rotation_index = 0
-		dummy_branch.state = "alive"; dummy_branch.connected_to_source = true
-		dummy_branch.update_texture()
-		
-		# Clear previous children before adding dummy (important if this is a retry scenario within _ready)
-		var children_to_remove_fallback = []
-		for child in get_children():
-			if child.name == "AudioManager" or child.name == "bg1": # Keep essentials
-				continue
-			if child is BranchNode: # USE class_name CHECK
-				children_to_remove_fallback.append(child)
-		for child_to_remove in children_to_remove_fallback:
-			child_to_remove.queue_free()
-
-		branches = [[dummy_branch]]
-		# Update global grid_width and grid_height if using this fallback and they are used elsewhere
-		# self.grid_width = 1 
-		# self.grid_height = 1
-		source_tile = branches[0][0]
-		dummy_branch.position = Vector2(0 * 84 + 42, 0 * 68 + 34)
-		add_child(dummy_branch)
-		print_verbose("Fallback: Created a 1x1 dummy puzzle.")
-		return 
-
-	branches = puzzle_data.branches
-	var source_x = puzzle_data.source_x
-	var source_y = puzzle_data.source_y
-
-	if source_x < 0 or source_x >= g_width or source_y < 0 or source_y >= g_height or \
-	   branches.size() <= source_x or branches[source_x].size() <= source_y or \
-	   branches[source_x][source_y] == null:
-		printerr("Invalid source tile coordinates (%s, %s) or source tile is null!" % [source_x, source_y])
-		return
-		
-	source_tile = branches[source_x][source_y]
-	print_verbose("Source Tile is at: (", source_x, ", ", source_y, ")")
-	
-	# Clear previous children (Branches) before adding new ones
-	var children_to_remove_init = []
-	for child in get_children():
-		if child.name == "AudioManager" or child.name == "bg1": # Keep essentials
-			continue
-		if child is BranchNode: # USE class_name CHECK
-			children_to_remove_init.append(child)
-	for child_to_remove in children_to_remove_init:
-		child_to_remove.queue_free()
-
-	for x in range(g_width):
-		for y in range(g_height):
-			if x >= branches.size() or y >= branches[x].size(): 
-				printerr("Attempting to access branches[%s][%s] out of bounds during scene setup." % [x,y])
-				continue
-
-			var branch_instance = branches[x][y]
-			if branch_instance == null:
-				printerr("Found null branch instance at %s, %s during scene setup" % [x,y])
-				branch_instance = b_scene.instantiate()
-				branch_instance.branch_type = BranchType.EMPTY
-				branch_instance.connections = [0,0,0,0]; branch_instance.state = "dead"
-				branch_instance.update_texture()
-				branches[x][y] = branch_instance
-				
-			branch_instance.position = Vector2(x * 84 + 42, y * 68 + 34)
-			
-			# Ensure signals are not connected multiple times
-			if not branch_instance.is_connected("branch_clicked", Callable(self, "_on_branch_clicked")):
-				branch_instance.connect("branch_clicked", Callable(self, "_on_branch_clicked"))
-
-			if not branch_instance.is_connected("branch_right_clicked", Callable(self, "_on_branch_right_clicked")):
-				branch_instance.connect("branch_right_clicked", Callable(self, "_on_branch_right_clicked"))
-
-			if not branch_instance.is_connected("turn_finished", Callable(self, "_on_branch_turn_finished")):
-				branch_instance.connect("turn_finished", Callable(self, "_on_branch_turn_finished"))
-			
-			add_child(branch_instance) 
-	
-	if source_tile and is_instance_valid(source_tile):
-		call_deferred("refresh_connectivity")
-	else:
-		printerr("Source tile is null or invalid before refresh_connectivity.")
-
+# There's no board to show, so go back to the menu rather than leave a broken scene up.
+# This doesn't use SceneChanger, which refuses to run while a fade is already in progress.
+func _on_generation_failed() -> void:
+	printerr("Grid: Could not generate a puzzle for '%s'. Returning to the menu." % current_difficulty_str)
+	if is_instance_valid(_game_hud):
+		_game_hud.locked = true
+	get_tree().call_deferred("change_scene_to_file", "res://scenes/main_menu.tscn")
 
 func _on_branch_clicked(x: int, y: int):
 	if all_connected or is_level_complete_animation_playing or level_won_waiting_for_exit_input:
@@ -581,8 +428,8 @@ func _load_from_pending_puzzle() -> void:
 	var src_x: int = data["source_x"]
 	var src_y: int = data["source_y"]
 
-	grid_width = 6
-	grid_height = 17
+	grid_width = difficulty_levels[current_difficulty_str].size[0]
+	grid_height = difficulty_levels[current_difficulty_str].size[1]
 	all_connected = false
 	is_level_complete_animation_playing = false
 	if is_instance_valid(_game_hud):
@@ -596,24 +443,10 @@ func _load_from_pending_puzzle() -> void:
 		return
 
 	source_tile = branches[src_x][src_y]
-
-	for x in range(grid_width):
-		for y in range(grid_height):
-			var b: BranchNode = branches[x][y]
-			if b != null:
-				b.position = Vector2(x * 84 + 42, y * 68 + 34)
-				if not b.is_connected("branch_clicked", Callable(self, "_on_branch_clicked")):
-					b.connect("branch_clicked", Callable(self, "_on_branch_clicked"))
-				if not b.is_connected("branch_right_clicked", Callable(self, "_on_branch_right_clicked")):
-					b.connect("branch_right_clicked", Callable(self, "_on_branch_right_clicked"))
-				if not b.is_connected("turn_finished", Callable(self, "_on_branch_turn_finished")):
-					b.connect("turn_finished", Callable(self, "_on_branch_turn_finished"))
-				add_child(b)
-
+	_place_tiles()
 	center_grid()
 	if AudioManager:
 		AudioManager.play_difficulty_music(current_difficulty_str)
-	call_deferred("refresh_connectivity")
 
 func _on_give_up_requested() -> void:
 	if all_connected or is_level_complete_animation_playing or level_won_waiting_for_exit_input:

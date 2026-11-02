@@ -4,9 +4,6 @@ const BranchType = preload("res://scripts/core/branch_types.gd").BranchType
 const _BranchScene: PackedScene = preload("res://scenes/Branch.tscn")
 const _PuzzleGenerator = preload("res://scripts/core/puzzle_generator.gd")
 
-# Per-difficulty generation settings — single source of truth shared with grid.gd.
-const _PRIM_SETTINGS: Dictionary = _PuzzleGenerator.DIFFICULTY_SETTINGS
-
 @onready var difficulty_label: RichTextLabel = %DifficultyLabel
 @onready var start_button: TextureButton = %MenuItemsContainer/HBox/StartButton
 @onready var start_label: RichTextLabel = %MenuItemsContainer/HBox/StartLabel
@@ -188,6 +185,12 @@ func _start_transition() -> void:
 	settings_button.disabled = true
 
 	_generate_and_store_puzzle()
+	if GlobalSettings.pending_puzzle_data.is_empty():
+		printerr("MainMenu: Could not generate a puzzle. Staying on the menu.")
+		_transitioning = false
+		start_button.disabled = false
+		settings_button.disabled = false
+		return
 	_slide_menu_down()
 	await _animate_tile_loadout()
 
@@ -208,61 +211,8 @@ func _retire_preview_renderer() -> void:
 
 func _generate_and_store_puzzle() -> void:
 	var diff: String = difficulty_levels[current_difficulty_index]
-	var is_toroidal: bool = (diff == "torrero")
-	var s: Dictionary = _PRIM_SETTINGS[diff]
-	var valid_cells: Dictionary = DifficultyLayouts.get_valid_cells(diff)
-	var min_acceptable_tiles: int = _get_min_acceptable_tiles(valid_cells.size(), s)
-	var max_attempts: int = int(s["max_gen_attempts"])
-
-	var generator = _PuzzleGenerator.new()
-	var puzzle_data: Dictionary = {}
-	var best_puzzle_data: Dictionary = {}
-	var best_active_count: int = -1
-
-	for attempt in range(max_attempts):
-		var candidate: Dictionary = generator.generate_solvable_puzzle(
-			6, 17,
-			_BranchScene,
-			s["prim_initial_density_factor"], s["prim_min_tiles"],
-			is_toroidal,
-			valid_cells
-		)
-		var active_count: int = generator.get_active_tile_count(candidate)
-		var initially_solved: bool = generator.is_puzzle_initially_solved(candidate)
-
-		if not initially_solved and active_count >= min_acceptable_tiles:
-			if not best_puzzle_data.is_empty():
-				generator.free_puzzle_nodes(best_puzzle_data)
-			puzzle_data = candidate
-			break
-
-		if not initially_solved and active_count > best_active_count:
-			if not best_puzzle_data.is_empty():
-				generator.free_puzzle_nodes(best_puzzle_data)
-			best_active_count = active_count
-			best_puzzle_data = candidate
-		else:
-			generator.free_puzzle_nodes(candidate)
-
-	if puzzle_data.is_empty():
-		puzzle_data = best_puzzle_data
-	if puzzle_data.is_empty():
-		puzzle_data = generator.generate_solvable_puzzle(
-			6, 17,
-			_BranchScene,
-			s["prim_initial_density_factor"], s["prim_min_tiles"],
-			is_toroidal,
-			valid_cells
-		)
-	generator.ensure_puzzle_not_initially_solved(puzzle_data)
-
-	GlobalSettings.pending_puzzle_data = puzzle_data
-	GlobalSettings.pending_puzzle_is_toroidal = is_toroidal
-
-func _get_min_acceptable_tiles(num_total_cells: int, settings: Dictionary) -> int:
-	var base_desired_tiles: int = int(floor(num_total_cells * settings["final_target_density_factor"]))
-	var variation_amount: int = int(floor(base_desired_tiles * settings["final_density_variation_factor"]))
-	return int(clamp(base_desired_tiles - variation_amount, 1, num_total_cells))
+	GlobalSettings.pending_puzzle_data = _PuzzleGenerator.create_puzzle(diff, _BranchScene)
+	GlobalSettings.pending_puzzle_is_toroidal = _PuzzleGenerator.DIFFICULTY_SETTINGS.get(diff, {}).get("wrap", false)
 
 func _slide_menu_down() -> void:
 	var mic: Node = %MenuItemsContainer
