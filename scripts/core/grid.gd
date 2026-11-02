@@ -408,24 +408,6 @@ func _on_branch_right_clicked(x: int, y: int):
 	print_verbose("--------------------------------------------")
 
 
-func defer_propagation(source_tile, p_is_toroidal: bool):
-	call_deferred("run_propagation", source_tile, p_is_toroidal)
-
-func run_propagation(source_tile, p_is_toroidal: bool):
-	source_tile.propagate_connection(grid_width, grid_height, branches, p_is_toroidal)
-	
-func validate_initial_connections():
-	# Start propagation from the source tile
-	if source_tile and is_instance_valid(source_tile): # Added validity check
-		source_tile.propagate_connection(grid_width, grid_height, branches, self.is_toroidal_grid)
-	#source_tile.propagate_connection(grid_width, grid_height, branches, self.is_toroidal_grid)
-	
-	# Force cleanup for disconnected tiles
-	for row in branches:
-		for branch in row:
-			if not branch.connected_to_source and branch.state == "alive":
-				branch.set_state("dead")
-
 func check_win_condition():
 	if all_connected or is_level_complete_animation_playing:
 		return
@@ -656,17 +638,6 @@ func _get_solve_order() -> Array:
 				visited[next] = true
 				queue.append(next)
 	return result
-
-func _propagate_after_solve() -> void:
-	for row in branches:
-		for b in row:
-			b.connected_to_source = false
-	source_tile.connected_to_source = true
-	source_tile.propagate_connection(grid_width, grid_height, branches, is_toroidal_grid)
-	for row in branches:
-		for b in row:
-			if b.branch_type != BranchType.EMPTY and b.state == "alive" and not b.connected_to_source:
-				b.set_state("dead")
 
 func _run_solve_animation() -> void:
 	for pos in _get_solve_order():
