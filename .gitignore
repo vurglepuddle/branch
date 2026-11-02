@@ -43,3 +43,14 @@ config.secret.json
 #md cleanup
 *.md
 !README.md
+!CREDITS.md
+!MUSIC_SOURCES.md
+
+# Project-owned audio distributed under the asset license
+!audio/modern/*_modern.mp3
+!audio/modern/SFX_modern.wav
+!audio/beep/tietra_ui_settings.wav
+!audio/other/beep_sound.wav
+
+
+artifacts/

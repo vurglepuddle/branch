@@ -70,4 +70,10 @@ The original can be found on [Archive.org](https://archive.org/details/msdos_Vet
 
 ## License
 
-It's licensed under [GPL-3.0](https://github.com/vurglepuddle/branch/blob/main/LICENSE). This project is a non-commercial fan recreation. I'm not affiliated with the original developers.
+Code, scenes, shaders and project configuration are licensed under [GPL-3.0](LICENSE).
+
+Original artwork, the VETKA font, Modern music, the rebuilt classical recordings and sound effects are licensed under [CC BY-NC-SA 4.0](LICENSE-ASSETS.txt), with credit to the project author optional. Commercial use of these assets requires separate permission; contact [vurglepuddle](https://github.com/vurglepuddle) through this repository.
+
+The classical compositions are by **Johann Sebastian Bach** and **Ludwig van Beethoven**. The rebuilt piano recordings use **Salamander Grand Piano V3 by Alexander Holm (CC BY 3.0)**. See [credits and asset terms](CREDITS.md) and the [composition and score sources](MUSIC_SOURCES.md). The rebuilt MIDI and piano files are still being finalized and have not replaced the current classic tracks.
+
+This is an unofficial fan recreation, unaffiliated with the original developers.
