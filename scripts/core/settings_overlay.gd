@@ -88,8 +88,12 @@ func _music_value_text() -> String:
 		"off":    return Locale.t("off")
 		_:        return Locale.t("classic")
 
+# The name goes with the value, because the rows only have icons to say what they are.
+func _on_off_text(name_key: String, enabled: bool) -> String:
+	return "%s %s" % [Locale.t(name_key), Locale.t("on" if enabled else "off")]
+
 func _sfx_value_text() -> String:
-	return Locale.t("on") if GlobalSettings.sfx_enabled else Locale.t("off")
+	return _on_off_text("sfx_value", GlobalSettings.sfx_enabled)
 
 func _graphics_value_text() -> String:
 	return Locale.t("graphics_old_label") if GlobalSettings.graphics_old else Locale.t("modern")
@@ -98,10 +102,10 @@ func _language_value_text() -> String:
 	return "EN" if GlobalSettings.language == "en" else "RU"
 
 func _solve_anim_value_text() -> String:
-	return Locale.t("on") if GlobalSettings.give_up_animation else Locale.t("off")
+	return _on_off_text("anim_value", GlobalSettings.give_up_animation)
 
 func _turn_anim_value_text() -> String:
-	return Locale.t("on") if GlobalSettings.turn_animation else Locale.t("off")
+	return _on_off_text("turn_value", GlobalSettings.turn_animation)
 
 func _refresh_labels() -> void:
 	title_label.bbcode_text          = _fmt_centered(Locale.t("credits" if _showing_credits else "settings"))

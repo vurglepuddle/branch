@@ -37,6 +37,7 @@ func _run() -> void:
 	_test_names_are_gone()
 	_test_title_and_close_are_centred_on_the_rows()
 	_test_music_selectors_go_both_ways()
+	_test_values_say_what_they_are()
 	_test_two_value_selectors()
 	_test_language_updates_everything()
 	_test_credits()
@@ -91,12 +92,19 @@ func _test_value_column_fits_every_value() -> void:
 		var size: int = label.get_theme_font_size("normal_font_size")
 		var values: Array[String] = ["EN", "RU"]
 		for language in strings:
-			for key in ["classic", "modern", "midi_new", "off", "on"]:
-				values.append(strings[language][key])
+			var table: Dictionary = strings[language]
+			for key in ["classic", "modern", "midi_new", "off"]:
+				values.append(table[key])
+			for name_key in ["sfx_value", "anim_value", "turn_value"]:
+				values.append("%s %s" % [table[name_key], table["on"]])
+				values.append("%s %s" % [table[name_key], table["off"]])
 		for value in values:
 			var width: float = font.get_string_size(value, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
 			if width > label.custom_minimum_size.x:
 				_fail("'%s' is %.0f px wide, but the %s value column is only %.0f" % [value, width, row, label.custom_minimum_size.x])
+			for i in range(value.length()):
+				if value[i] != " " and not font.has_char(value.unicode_at(i)):
+					_fail("the game font has no '%s' for '%s'" % [value[i], value])
 
 func _test_names_are_gone() -> void:
 	for row in ["Music", "SFX", "Language", "SolveAnim", "TurnAnim"]:
@@ -134,6 +142,22 @@ func _check_music(expected: String) -> void:
 	var wanted: String = {"classic": "Classic", "modern": "Modern", "midi_new": "Midi New", "off": "Off"}[expected]
 	if _settings.language == "en" and shown != wanted:
 		_fail("the music value shows '%s', expected '%s'" % [shown, wanted])
+
+func _test_values_say_what_they_are() -> void:
+	_settings.language = "en"
+	var cases: Dictionary = {"SFX": ["sfx_enabled", "SFX"], "SolveAnim": ["give_up_animation", "Anim"], "TurnAnim": ["turn_animation", "Turn"]}
+	for row in cases:
+		var setting: String = cases[row][0]
+		var saved: bool = _settings.get(setting)
+		for enabled in [true, false]:
+			_settings.set(setting, enabled)
+			_overlay._refresh_labels()
+			var expected: String = "%s %s" % [cases[row][1], "On" if enabled else "Off"]
+			var shown: String = _overlay.get_node("%%%sValueLabel" % row).get_parsed_text()
+			if shown != expected:
+				_fail("%s shows '%s', expected '%s'" % [row, shown, expected])
+		_settings.set(setting, saved)
+	_overlay._refresh_labels()
 
 func _test_two_value_selectors() -> void:
 	var cases: Dictionary = {"SFX": "sfx_enabled", "SolveAnim": "give_up_animation", "TurnAnim": "turn_animation"}
