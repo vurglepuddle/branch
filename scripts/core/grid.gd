@@ -2,6 +2,7 @@ extends Node2D # this is grid.gd #
 
 const BranchType = preload("res://scripts/core/branch_types.gd").BranchType
 const PuzzleGenerator = preload("res://scripts/core/puzzle_generator.gd")
+const NEIGHBOR_OFFSETS: Array[Vector2i] = [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)] # UP, RIGHT, DOWN, LEFT
 var generator = PuzzleGenerator.new()
 # Reference to the Branch scene
 @export var BranchScene: PackedScene
@@ -295,7 +296,6 @@ func init_branches(g_width: int, g_height: int, b_scene: PackedScene,
 		dummy_branch.position = Vector2(0 * 84 + 42, 0 * 68 + 34)
 		add_child(dummy_branch)
 		print_verbose("Fallback: Created a 1x1 dummy puzzle.")
-		# defer_propagation(source_tile) # Might not be needed or could error if grid size changed drastically
 		return 
 
 	branches = puzzle_data.branches
@@ -347,11 +347,10 @@ func init_branches(g_width: int, g_height: int, b_scene: PackedScene,
 			
 			add_child(branch_instance) 
 	
-	# Make sure source_tile is valid before calling defer_propagation
 	if source_tile and is_instance_valid(source_tile):
-		defer_propagation(source_tile, p_is_toroidal)
+		call_deferred("refresh_connectivity")
 	else:
-		printerr("Source tile is null or invalid before defer_propagation.")
+		printerr("Source tile is null or invalid before refresh_connectivity.")
 
 
 func _on_branch_clicked(x: int, y: int):
@@ -359,55 +358,44 @@ func _on_branch_clicked(x: int, y: int):
 		return
 	if is_instance_valid(_game_hud) and _game_hud.panel_is_open:
 		return
+	var clicked_branch = branches[x][y]
+	if clicked_branch.branch_type == BranchType.EMPTY:
+		return
 	# Play the beep sound
 	if AudioManager:
 		AudioManager.play_beep_pitched(y, grid_height)
 
-	var clicked_branch = branches[x][y]
-
 	clicked_branch.cycle_rotation()
-	
-	var flags_reset_count = 0
-	for r_idx in range(branches.size()): # Iterate by index for clarity
-		for c_idx in range(branches[r_idx].size()):
-			var bn = branches[r_idx][c_idx]
-			if bn.connected_to_source == true: # Only print if it was true
-				# print("GRID: Resetting flag for (%s,%s) from %s to false" % [bn.grid_x, bn.grid_y, bn.connected_to_source])
-				flags_reset_count +=1
-			bn.connected_to_source = false
-			
-	if source_tile: # Ensure source_tile is valid
-		source_tile.connected_to_source = true
-		source_tile.propagate_connection(grid_width, grid_height, branches, self.is_toroidal_grid)
-
-	var turned_dead_count = 0
-	var kept_alive_count = 0
-	for r_idx in range(branches.size()):
-		for c_idx in range(branches[r_idx].size()):
-			var bn = branches[r_idx][c_idx]
-			if bn.branch_type != BranchType.EMPTY: # Only consider non-empty tiles
-				if bn.state == "alive" and not bn.connected_to_source:
-					bn.set_state("dead")
-					turned_dead_count +=1
-				elif bn.state == "dead" and bn.connected_to_source: # Should not happen if logic is correct
-					bn.set_state("alive") # This might be an overcorrection, but highlights an issue
-				elif bn.state == "alive" and bn.connected_to_source:
-					kept_alive_count +=1
-	for row in branches:
-		for branch_node_in_row in row: # Renamed 'branch' to avoid conflict
-			if branch_node_in_row.state == "alive" and not branch_node_in_row.connected_to_source:
-				branch_node_in_row.set_state("dead")
-
-	source_tile.connected_to_source = true
-	source_tile.propagate_connection(grid_width, grid_height, branches, self.is_toroidal_grid)
-
-	for row in branches:
-		for branch in row:
-			if branch.state == "alive" and not branch.connected_to_source:
-				branch.set_state("dead")
-				
-	# Step 5: Check if the puzzle is solved
+	refresh_connectivity()
 	check_win_condition()
+
+# Walks reciprocal connections out from the source, then sets every tile's alive/dead state in one pass.
+func refresh_connectivity() -> void:
+	if not is_instance_valid(source_tile):
+		return
+	var start := Vector2i(source_tile.grid_x, source_tile.grid_y)
+	var reachable: Dictionary = {start: true}
+	var to_visit: Array[Vector2i] = [start]
+	while not to_visit.is_empty():
+		var pos: Vector2i = to_visit.pop_back()
+		var connections: Array = branches[pos.x][pos.y].connections
+		for dir in range(4):
+			if connections[dir] != 1:
+				continue
+			var next: Vector2i = pos + NEIGHBOR_OFFSETS[dir]
+			if is_toroidal_grid:
+				next = Vector2i(posmod(next.x, grid_width), posmod(next.y, grid_height))
+			elif next.x < 0 or next.x >= grid_width or next.y < 0 or next.y >= grid_height:
+				continue
+			if not reachable.has(next) and branches[next.x][next.y].connections[(dir + 2) % 4] == 1:
+				reachable[next] = true
+				to_visit.append(next)
+
+	for column in branches:
+		for branch in column:
+			var is_alive: bool = reachable.has(Vector2i(branch.grid_x, branch.grid_y))
+			branch.connected_to_source = is_alive
+			branch.set_state("alive" if is_alive else "dead")
 
 func _on_branch_right_clicked(x: int, y: int):
 	var clicked_branch = branches[x][y]
@@ -439,34 +427,23 @@ func validate_initial_connections():
 				branch.set_state("dead")
 
 func check_win_condition():
-	# Assume all are connected initially, then prove otherwise.
-	self.all_connected = true # Use 'self' to be explicit or just 'all_connected'
-	
-	for x_idx in range(grid_width):
-		for y_idx in range(grid_height):
-			var branch = branches[x_idx][y_idx]
-			# Skip empty tiles
-			if branch.branch_type == BranchType.EMPTY:
-				continue
-				
-			# If any non-empty tile is dead, puzzle is not solved
-			if branch.state != "alive":
-				self.all_connected = false # Set the class-level variable
-				break # Exit the inner loop
-		
-		if not self.all_connected: # Check class-level variable
-			break # Exit the outer loop
-	
-	if self.all_connected: # Check class-level variable
-		is_level_complete_animation_playing = true # Set flag
-		if is_instance_valid(_game_hud):
-			_game_hud.hide_panel()
-			_game_hud.locked = true
-		print_verbose("🎉 CONGRATULATIONS! 🎉")
-		if AudioManager:
-			AudioManager.play_victory_music()
-		call_deferred("start_leaf_spawn_sequence")
-		call_deferred("start_blossom_sequence")
+	if all_connected or is_level_complete_animation_playing:
+		return
+	for column in branches:
+		for branch in column:
+			if branch.branch_type != BranchType.EMPTY and branch.state != "alive":
+				return
+
+	all_connected = true
+	is_level_complete_animation_playing = true # Set flag
+	if is_instance_valid(_game_hud):
+		_game_hud.hide_panel()
+		_game_hud.locked = true
+	print_verbose("🎉 CONGRATULATIONS! 🎉")
+	if AudioManager:
+		AudioManager.play_victory_music()
+	call_deferred("start_leaf_spawn_sequence")
+	call_deferred("start_blossom_sequence")
 
 func start_blossom_sequence():
 	var alive_terminal_branches = []
@@ -631,7 +608,7 @@ func _load_from_pending_puzzle() -> void:
 	center_grid()
 	if AudioManager:
 		AudioManager.play_difficulty_music(current_difficulty_str)
-	defer_propagation(source_tile, is_toroidal_grid)
+	call_deferred("refresh_connectivity")
 
 func _on_give_up_requested() -> void:
 	if all_connected or is_level_complete_animation_playing or level_won_waiting_for_exit_input:
@@ -695,7 +672,7 @@ func _run_solve_animation() -> void:
 	for pos in _get_solve_order():
 		await get_tree().create_timer(0.07).timeout
 		branches[pos.x][pos.y].solve_rotation()
-		_propagate_after_solve()
+		refresh_connectivity()
 		if AudioManager:
 			AudioManager.play_beep_pitched(pos.y, grid_height)
 	is_level_complete_animation_playing = false
