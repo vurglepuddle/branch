@@ -125,6 +125,25 @@ func play_terminal_blossom():
 		printerr("Branch at (%s,%s) missing AnimatedSprite2D node!" % [grid_x, grid_y])
 
 
+# In-between drawings for animated turns, by tile type. Each is drawn for one starting rotation and
+# turned to fit the others. A turning tile always shows its dead drawings. Types not listed turn instantly.
+# Frame A is 82 wide because frame B starts at x=82 on the sheet; the margin restores the tile's width.
+const TURN_DRAWINGS: Dictionary = {
+	BranchType.BEND: {
+		"sheet": preload("res://sprites/branch_turn.png"),
+		"drawn_rotation": 2,
+		"frames": [
+			{"region": Rect2(0, 0, 82, 68), "margin": Rect2(0, 0, 2, 0)},
+			{"region": Rect2(82, 0, 84, 68), "margin": Rect2()},
+		],
+	},
+}
+const TURN_STAGE_MS: int = 35
+const TURN_STAGES: int = 3 # The old drawing, the two in-betweens, then the real quarter-turn
+const TURN_SIDEWAYS_SCALE := Vector2(68.0 / 84.0, 84.0 / 68.0)
+
+static var _turn_textures: Dictionary = {}
+
 # Default connections for rotation 0
 var connections = [1, 1, 0, 0]
 var rotation_index = 0
@@ -134,14 +153,20 @@ var solution_rotation_index: int = 0
 var state: String = "dead"  # Default state
 var connected_to_source: bool = false  # Not connected to source by default
 
+# Animated turn in progress: when it started, or -1, and whether another tap is waiting
+var _turn_started_ms: int = -1
+var _turn_queued: bool = false
+
 # Branch type
 @export var branch_type: BranchType = BranchType.BEND  # Default type
 
 # Signal to notify when this branch is clicked
 signal branch_clicked(x: int, y: int)
 signal branch_right_clicked(x: int, y: int)
+signal turn_finished(x: int, y: int)
 
 func _ready():
+	set_process(false)
 	if sprite == null:
 		printerr("Error: Sprite2D node is missing!")
 		return
@@ -197,6 +222,70 @@ func cycle_rotation():
 	connections = rotate_connections(connections)
 	update_texture()
 
+func can_animate_turn() -> bool:
+	return TURN_DRAWINGS.has(branch_type)
+
+# One extra tap is remembered during a turn; any more are ignored.
+func accepts_turn() -> bool:
+	return not _turn_queued
+
+func is_turning() -> bool:
+	return _turn_started_ms >= 0
+
+func start_turn(now_ms: int = Time.get_ticks_msec()) -> void:
+	if is_turning():
+		_turn_queued = true
+		return
+	_turn_started_ms = now_ms
+	set_process(true)
+
+func cancel_turn() -> void:
+	_turn_queued = false
+	if not is_turning():
+		return
+	_turn_started_ms = -1
+	set_process(false)
+	update_texture()
+
+func _process(_delta: float) -> void:
+	_advance_turn(Time.get_ticks_msec())
+
+# Stages come from the elapsed time, so a stalled frame skips ahead instead of replaying drawings.
+func _advance_turn(now_ms: int) -> void:
+	var stage: int = (now_ms - _turn_started_ms) / TURN_STAGE_MS
+	if stage < 1:
+		return
+	if stage < TURN_STAGES:
+		_show_turn_drawing(stage - 1)
+		return
+	_turn_started_ms = -1
+	set_process(false)
+	cycle_rotation()
+	if _turn_queued:
+		_turn_queued = false
+		start_turn(now_ms)
+	turn_finished.emit(grid_x, grid_y)
+
+func _show_turn_drawing(index: int) -> void:
+	var quarter_turns: int = rotation_index - TURN_DRAWINGS[branch_type]["drawn_rotation"]
+	sprite.texture = _get_turn_textures(branch_type)[index]
+	sprite.rotation = deg_to_rad(90.0 * quarter_turns)
+	# Tiles are wider than tall, so sideways drawings are stretched to stay inside the cell.
+	sprite.scale = TURN_SIDEWAYS_SCALE if quarter_turns % 2 != 0 else Vector2.ONE
+
+static func _get_turn_textures(type: BranchType) -> Array:
+	if not _turn_textures.has(type):
+		var drawing: Dictionary = TURN_DRAWINGS[type]
+		var frames: Array = []
+		for frame in drawing["frames"]:
+			var atlas := AtlasTexture.new()
+			atlas.atlas = drawing["sheet"]
+			atlas.region = frame["region"]
+			atlas.margin = frame["margin"]
+			frames.append(atlas)
+		_turn_textures[type] = frames
+	return _turn_textures[type]
+
 func solve_rotation() -> void:
 	var steps: int = (solution_rotation_index - rotation_index + 4) % 4
 	for _i in range(steps):
@@ -215,7 +304,7 @@ func rotate_connections(current_connections: Array) -> Array:
 	]
 	
 func update_texture():
-	if sprite == null:
+	if sprite == null or is_turning():
 		return
 		
 	# Ensure branch_type is valid
@@ -240,6 +329,7 @@ func update_texture():
 	var texture_path = textures_for_state[rotation_index]
 	if texture_path != null:
 		sprite.texture = texture_path
+		sprite.rotation = 0.0
 		sprite.visible = true
 		sprite.scale = Vector2(1, 1)  # Reset scale to 1:1
 		sprite.z_index = 1           # Ensure correct rendering order

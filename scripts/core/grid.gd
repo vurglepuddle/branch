@@ -88,6 +88,7 @@ func load_level_for_current_difficulty():
 	var final_variation = current_difficulty_settings.final_density_variation_factor
 	var max_gen_attempts_for_level = current_difficulty_settings.max_gen_attempts
 
+	_cancel_turns()
 	print_verbose("Clearing old branches...")
 	var children_to_remove = []
 	for child in get_children():
@@ -344,6 +345,9 @@ func init_branches(g_width: int, g_height: int, b_scene: PackedScene,
 
 			if not branch_instance.is_connected("branch_right_clicked", Callable(self, "_on_branch_right_clicked")):
 				branch_instance.connect("branch_right_clicked", Callable(self, "_on_branch_right_clicked"))
+
+			if not branch_instance.is_connected("turn_finished", Callable(self, "_on_branch_turn_finished")):
+				branch_instance.connect("turn_finished", Callable(self, "_on_branch_turn_finished"))
 			
 			add_child(branch_instance) 
 	
@@ -361,13 +365,29 @@ func _on_branch_clicked(x: int, y: int):
 	var clicked_branch = branches[x][y]
 	if clicked_branch.branch_type == BranchType.EMPTY:
 		return
+	var animate: bool = GlobalSettings.turn_animation and clicked_branch.can_animate_turn()
+	if animate and not clicked_branch.accepts_turn():
+		return
 	# Play the beep sound
 	if AudioManager:
 		AudioManager.play_beep_pitched(y, grid_height)
 
+	if animate:
+		clicked_branch.start_turn()
+		return
 	clicked_branch.cycle_rotation()
 	refresh_connectivity()
 	check_win_condition()
+
+func _on_branch_turn_finished(_x: int, _y: int) -> void:
+	refresh_connectivity()
+	check_win_condition()
+
+func _cancel_turns() -> void:
+	for column in branches:
+		for branch in column:
+			if is_instance_valid(branch):
+				branch.cancel_turn()
 
 # Walks reciprocal connections out from the source, then sets every tile's alive/dead state in one pass.
 func refresh_connectivity() -> void:
@@ -418,6 +438,7 @@ func check_win_condition():
 
 	all_connected = true
 	is_level_complete_animation_playing = true # Set flag
+	_cancel_turns()
 	if is_instance_valid(_game_hud):
 		_game_hud.hide_panel()
 		_game_hud.locked = true
@@ -585,6 +606,8 @@ func _load_from_pending_puzzle() -> void:
 					b.connect("branch_clicked", Callable(self, "_on_branch_clicked"))
 				if not b.is_connected("branch_right_clicked", Callable(self, "_on_branch_right_clicked")):
 					b.connect("branch_right_clicked", Callable(self, "_on_branch_right_clicked"))
+				if not b.is_connected("turn_finished", Callable(self, "_on_branch_turn_finished")):
+					b.connect("turn_finished", Callable(self, "_on_branch_turn_finished"))
 				add_child(b)
 
 	center_grid()
@@ -595,6 +618,7 @@ func _load_from_pending_puzzle() -> void:
 func _on_give_up_requested() -> void:
 	if all_connected or is_level_complete_animation_playing or level_won_waiting_for_exit_input:
 		return
+	_cancel_turns()
 	_game_hud.hide_panel()
 	_game_hud.locked = true
 	is_level_complete_animation_playing = true

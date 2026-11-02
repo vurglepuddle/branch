@@ -62,7 +62,7 @@ theme_override_constants/margin_bottom = 20
 [node name="VBox" type="VBoxContainer" parent="Panel/MarginContainer"]
 z_index = 110
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 5
 
 [node name="TitleLabel" type="RichTextLabel" parent="Panel/MarginContainer/VBox"]
 unique_name_in_owner = true
@@ -322,8 +322,56 @@ fit_content = true
 scroll_active = false
 autowrap_mode = 0
 
+[node name="Row_TurnAnim" type="HBoxContainer" parent="Panel/MarginContainer/VBox"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="GapRight" type="Control" parent="Panel/MarginContainer/VBox/Row_TurnAnim"]
+custom_minimum_size = Vector2(5, 0)
+layout_mode = 2
+
+[node name="TurnAnimLabel" type="RichTextLabel" parent="Panel/MarginContainer/VBox/Row_TurnAnim"]
+unique_name_in_owner = true
+clip_contents = false
+custom_minimum_size = Vector2(125, 0)
+layout_mode = 2
+theme = ExtResource("4_theme")
+theme_override_colors/font_shadow_color = Color(1, 0.780392, 0.458824, 1)
+theme_override_font_sizes/normal_font_size = 38
+bbcode_enabled = true
+text = "[color=white]T[/color][color=#54fcfc]urn Anim[/color]"
+fit_content = true
+scroll_active = false
+autowrap_mode = 0
+
+[node name="GapRight2" type="Control" parent="Panel/MarginContainer/VBox/Row_TurnAnim"]
+custom_minimum_size = Vector2(5, 0)
+layout_mode = 2
+
+[node name="TurnAnimToggle" type="TextureButton" parent="Panel/MarginContainer/VBox/Row_TurnAnim"]
+unique_name_in_owner = true
+layout_mode = 2
+texture_normal = ExtResource("2_btn")
+texture_pressed = ExtResource("3_btnp")
+
+[node name="TurnAnimValueLabel" type="RichTextLabel" parent="Panel/MarginContainer/VBox/Row_TurnAnim"]
+unique_name_in_owner = true
+clip_contents = false
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+theme = ExtResource("4_theme")
+theme_override_colors/font_shadow_color = Color(1, 0.780392, 0.458824, 1)
+theme_override_font_sizes/normal_font_size = 38
+bbcode_enabled = true
+text = "[color=white]O[/color][color=#54fcfc]ff[/color]"
+fit_content = true
+scroll_active = false
+autowrap_mode = 0
+
 [node name="GapRight3" type="Control" parent="Panel/MarginContainer/VBox"]
-custom_minimum_size = Vector2(0, 16)
+custom_minimum_size = Vector2(0, 0)
 layout_mode = 2
 
 [node name="Row_Close" type="HBoxContainer" parent="Panel/MarginContainer/VBox"]

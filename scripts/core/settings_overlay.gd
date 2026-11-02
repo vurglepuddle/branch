@@ -23,6 +23,9 @@ const BBCODE_REST: String = "#590000"
 @onready var solve_anim_label: RichTextLabel = %SolveAnimLabel
 @onready var solve_anim_toggle: TextureButton = %SolveAnimToggle
 @onready var solve_anim_value_label: RichTextLabel = %SolveAnimValueLabel
+@onready var turn_anim_label: RichTextLabel = %TurnAnimLabel
+@onready var turn_anim_toggle: TextureButton = %TurnAnimToggle
+@onready var turn_anim_value_label: RichTextLabel = %TurnAnimValueLabel
 @onready var close_label: RichTextLabel = %CloseLabel
 
 func _ready() -> void:
@@ -31,6 +34,7 @@ func _ready() -> void:
 	graphics_toggle.pressed.connect(_on_graphics_toggle)
 	language_toggle.pressed.connect(_on_language_toggle)
 	solve_anim_toggle.pressed.connect(_on_solve_anim_toggle)
+	turn_anim_toggle.pressed.connect(_on_turn_anim_toggle)
 	close_label.gui_input.connect(_on_close_label_input)
 	visible = false
 
@@ -67,6 +71,9 @@ func _language_value_text() -> String:
 func _solve_anim_value_text() -> String:
 	return Locale.t("on") if GlobalSettings.give_up_animation else Locale.t("off")
 
+func _turn_anim_value_text() -> String:
+	return Locale.t("on") if GlobalSettings.turn_animation else Locale.t("off")
+
 func _refresh_labels() -> void:
 	title_label.bbcode_text          = _fmt(Locale.t("settings"))
 	music_label.bbcode_text          = _fmt(Locale.t("music"))
@@ -74,12 +81,14 @@ func _refresh_labels() -> void:
 	graphics_label.bbcode_text       = _fmt(Locale.t("graphics"))
 	language_label.bbcode_text       = _fmt(Locale.t("language"))
 	solve_anim_label.bbcode_text     = _fmt(Locale.t("solve_anim"))
+	turn_anim_label.bbcode_text      = _fmt(Locale.t("turn_anim"))
 	close_label.bbcode_text          = _fmt(Locale.t("close"))
 	music_value_label.bbcode_text    = _fmt(_music_value_text())
 	sfx_value_label.bbcode_text      = _fmt(_sfx_value_text())
 	graphics_value_label.bbcode_text = _fmt(_graphics_value_text())
 	language_value_label.bbcode_text = _fmt(_language_value_text())
 	solve_anim_value_label.bbcode_text = _fmt(_solve_anim_value_text())
+	turn_anim_value_label.bbcode_text = _fmt(_turn_anim_value_text())
 
 func _on_music_toggle() -> void:
 	AudioManager.toggle_music_style_and_state()
@@ -107,6 +116,12 @@ func _on_solve_anim_toggle() -> void:
 	GlobalSettings.give_up_animation = !GlobalSettings.give_up_animation
 	GlobalSettings.save_settings()
 	solve_anim_value_label.bbcode_text = _fmt(_solve_anim_value_text())
+
+func _on_turn_anim_toggle() -> void:
+	_play_button_sound()
+	GlobalSettings.turn_animation = !GlobalSettings.turn_animation
+	GlobalSettings.save_settings()
+	turn_anim_value_label.bbcode_text = _fmt(_turn_anim_value_text())
 
 func _input(event: InputEvent) -> void:
 	if not visible:

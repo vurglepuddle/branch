@@ -2,6 +2,7 @@ extends Node
 
 const POINTER_CURSOR: Texture2D = preload("res://sprites/pointer.png")
 const POINTER_HOTSPOT: Vector2 = Vector2.ZERO
+const POINTER_LAYER: int = 129 # Above FadeOverlay's 128
 
 var current_difficulty: String = "baby"
 var last_menu_difficulty_index: int = 0
@@ -11,6 +12,7 @@ var sfx_enabled: bool = true
 var graphics_old: bool = false
 var language: String = "en"           # "en" | "ru"
 var give_up_animation: bool = true
+var turn_animation: bool = false
 
 # Set by main_menu.gd before scene change; read and cleared by grid.gd on load.
 var pending_puzzle_data: Dictionary = {}
@@ -19,13 +21,38 @@ var return_from_game: bool = false
 
 const SETTINGS_PATH := "user://settings.cfg"
 
+var _pointer_sprite: Sprite2D
+
 func _ready() -> void:
 	load_settings()
-	_apply_custom_cursor()
+	_create_pointer()
 
-func _apply_custom_cursor() -> void:
-	Input.set_custom_mouse_cursor(POINTER_CURSOR, Input.CURSOR_ARROW, POINTER_HOTSPOT)
-	Input.set_custom_mouse_cursor(POINTER_CURSOR, Input.CURSOR_POINTING_HAND, POINTER_HOTSPOT)
+# The pointer is a sprite rather than a custom OS cursor, so screen recordings capture it undistorted.
+func _create_pointer() -> void:
+	set_process(false)
+	if OS.has_feature("mobile"):
+		return
+	var layer := CanvasLayer.new()
+	layer.layer = POINTER_LAYER
+	add_child(layer)
+	_pointer_sprite = Sprite2D.new()
+	_pointer_sprite.texture = POINTER_CURSOR
+	_pointer_sprite.centered = false
+	_pointer_sprite.offset = -POINTER_HOTSPOT
+	layer.add_child(_pointer_sprite)
+	Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
+	set_process(true)
+
+func _process(_delta: float) -> void:
+	_pointer_sprite.position = get_viewport().get_mouse_position()
+
+func _notification(what: int) -> void:
+	if _pointer_sprite == null:
+		return
+	if what == NOTIFICATION_WM_MOUSE_EXIT:
+		_pointer_sprite.visible = false
+	elif what == NOTIFICATION_WM_MOUSE_ENTER:
+		_pointer_sprite.visible = true
 
 func save_settings() -> void:
 	var cfg := ConfigFile.new()
@@ -35,6 +62,7 @@ func save_settings() -> void:
 	cfg.set_value("graphics", "old", graphics_old)
 	cfg.set_value("ui", "language", language)
 	cfg.set_value("ui", "give_up_animation", give_up_animation)
+	cfg.set_value("ui", "turn_animation", turn_animation)
 	cfg.save(SETTINGS_PATH)
 
 func load_settings() -> void:
@@ -52,3 +80,4 @@ func load_settings() -> void:
 	graphics_old = cfg.get_value("graphics", "old", false)
 	language = cfg.get_value("ui", "language", "en")
 	give_up_animation = cfg.get_value("ui", "give_up_animation", true)
+	turn_animation = cfg.get_value("ui", "turn_animation", false)

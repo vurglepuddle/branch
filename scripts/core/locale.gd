@@ -23,6 +23,7 @@ const STRINGS: Dictionary = {
 		"give_up": "Give Up",
 		"start": "Start",
 		"solve_anim": "Solve Anim",
+		"turn_anim": "Turn Anim",
 	},
 	"ru": {
 		"settings": "Настройки",
@@ -46,6 +47,7 @@ const STRINGS: Dictionary = {
 		"give_up": "Сдаться",
 		"start": "Старт",
 		"solve_anim": "Анимация",
+		"turn_anim": "Поворот",
 	},
 }
 
