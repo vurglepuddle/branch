@@ -34,6 +34,8 @@ func _run() -> void:
 	_test_glint_slots_capped_by_tips(grid, tips)
 	_reset_tiles(tips)
 	_test_stop_hides_glints(grid, tips)
+	_reset_tiles(tips)
+	_test_glint_sound(grid, tips)
 	_close_grid(grid)
 
 	_test_glint_slots_per_difficulty()
@@ -110,13 +112,22 @@ func _test_flower_schedule(grid: Node, tips: Array) -> void:
 	# Tips drift apart a little anyway from their random steps, so a real stagger has to be wider.
 	_expect(starts.max() - starts.min() >= 1000, "tips should start well apart, but they span only %d ms" % (starts.max() - starts.min()))
 	_expect(starts.max() <= (WinEffects.MAX_START_DELAY_STEPS + 1) * (WinEffects.OPENING_STEP_MAX_MS + TICK_MS), "a tip started too late, at %d ms" % starts.max())
+	var longest_opening_ms: int = 20 * (WinEffects.OPENING_STEP_MAX_MS + TICK_MS)
+	var holds: Array[int] = []
 	for i in first_seen:
 		if not ripening_seen.has(i):
 			_fail("a tip finished without ever ripening")
 			continue
 		var opening_and_hold: int = ripening_seen[i] - first_seen[i]
-		if opening_and_hold < WinEffects.FULL_BLOOM_HOLD_MS or opening_and_hold > WinEffects.FULL_BLOOM_HOLD_MS + 4000:
+		holds.append(opening_and_hold)
+		if opening_and_hold < WinEffects.FULL_BLOOM_HOLD_MIN_MS or opening_and_hold > WinEffects.FULL_BLOOM_HOLD_MAX_MS + longest_opening_ms:
 			_fail("a tip took %d ms from opening to ripening" % opening_and_hold)
+	if not holds.is_empty():
+		# The first tip to open gets the shortest hold, and the others have to spread out after it.
+		var first_tip: int = first_seen.keys().reduce(func(a, b): return a if first_seen[a] <= first_seen[b] else b)
+		var first_hold: int = ripening_seen[first_tip] - first_seen[first_tip]
+		_expect(first_hold <= WinEffects.FULL_BLOOM_HOLD_MIN_MS + longest_opening_ms, "the first tip to open held for %d ms, it should hold for the minimum" % first_hold)
+		_expect(holds.max() - holds.min() >= 2000, "holds should be staggered, but they span only %d ms" % (holds.max() - holds.min()))
 	_expect(finished_signals.size() == 1, "all_tips_finished should fire once, not %d times" % finished_signals.size())
 	var ripening_starts: Array = ripening_seen.values()
 	if not ripening_starts.is_empty():
@@ -245,6 +256,44 @@ func _test_stop_hides_glints(grid: Node, tips: Array) -> void:
 	_expect(stars.all(func(s): return not s.visible), "nothing should run after stopping")
 	effects.queue_free()
 
+func _test_glint_sound(grid: Node, tips: Array) -> void:
+	var effects: Node = _new_effects(grid, 8)
+	var heard: Array[Node] = []
+	effects.glint_started.connect(func(tile): heard.append(tile))
+	effects.start(tips, 3, 0)
+	var now: int = _run_until_flowers_finish(effects)
+	_expect(heard.is_empty(), "no glint should sound before the fruit is finished")
+	var appearances: int = 0
+	var was_visible: Dictionary = {}
+	var end_time: int = now + 20000
+	while now < end_time:
+		now += TICK_MS
+		effects.advance(now)
+		for tile in tips:
+			var visible_now: bool = tile.get_node("FruitStar").visible
+			if visible_now and not was_visible.get(tile, false):
+				appearances += 1
+			was_visible[tile] = visible_now
+	_expect(appearances > 3, "not enough glints appeared to test the sound")
+	_expect(heard.size() == appearances, "%d glints appeared but %d asked for a sound" % [appearances, heard.size()])
+	effects.queue_free()
+
+	var audio: Node = root.get_node("AudioManager")
+	var saved_sfx: bool = audio.sfx_enabled
+	audio.sfx_enabled = true
+	var pitches: Dictionary = {}
+	for tile in tips:
+		for _i in range(4):
+			grid._on_glint_started(tile)
+			pitches[audio.sfx_player.pitch_scale] = true
+	_expect(audio.sfx_player.stream == audio.star_twinkle_sound, "a glint should play the title screen's plink")
+	_expect(pitches.size() > 5, "glint sounds should vary in pitch, heard %d different pitches" % pitches.size())
+	audio.sfx_player.stream = null
+	audio.sfx_enabled = false
+	grid._on_glint_started(tips[0])
+	_expect(audio.sfx_player.stream == null, "a glint shouldn't make a sound with SFX off")
+	audio.sfx_enabled = saved_sfx
+
 func _test_glint_slots_per_difficulty() -> void:
 	var expected: Dictionary = {"baby": 1, "intern": 2, "profi": 3, "master": 4, "expert": 5, "torrero": 5}
 	_expect(WinEffects.GLINT_SLOTS == expected, "glint slots per difficulty changed: %s" % str(WinEffects.GLINT_SLOTS))
@@ -259,6 +308,7 @@ func _test_real_win_and_leaving() -> void:
 		return
 	await process_frame
 	_expect(is_instance_valid(grid._win_effects), "a win should start the effects")
+	_expect(grid._win_effects.glint_started.is_connected(grid._on_glint_started), "a real win should play the glint sound")
 	_expect(not grid.level_won_waiting_for_exit_input, "leaving shouldn't be allowed straight after a win")
 	var tap := InputEventMouseButton.new()
 	tap.pressed = true

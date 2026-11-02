@@ -301,12 +301,17 @@ func _start_win_effects() -> void:
 	_win_effects = WinEffects.new()
 	add_child(_win_effects)
 	_win_effects.exit_allowed.connect(_on_win_exit_allowed)
+	_win_effects.glint_started.connect(_on_glint_started)
 	_win_effects.start(tips, WinEffects.GLINT_SLOTS.get(current_difficulty_str, 1))
 
 func _on_win_exit_allowed() -> void:
 	is_level_complete_animation_playing = false
 	level_won_waiting_for_exit_input = true
 	print_verbose("Grid: Now waiting for input to return to menu.")
+
+func _on_glint_started(tile: Node) -> void:
+	if AudioManager:
+		AudioManager.play_star_twinkle_sound(tile.global_position.y, get_viewport_rect().size.y)
 
 func _stop_win_effects() -> void:
 	if is_instance_valid(_win_effects):

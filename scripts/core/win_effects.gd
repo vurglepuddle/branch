@@ -5,16 +5,20 @@ extends Node # win_effects.gd
 
 signal exit_allowed
 signal all_tips_finished
+signal glint_started(tile: Node)
 
 const EXIT_ALLOWED_AFTER_MS: int = 2000
 
 # Each tip moves through numbered steps. It stays hidden until step 1, so a random negative start
-# staggers the tips. Step 21 is full bloom, and step 41 is the finished fruit.
+# staggers the tips. Step 21 is full bloom, and step 41 is the finished fruit. The first tip to open
+# holds its flower for the minimum and the rest hold for random times, so the first fruit comes soon
+# and flowers stay on screen while the others ripen.
 const MAX_START_DELAY_STEPS: int = 59
 const OPENING_STEP_MIN_MS: int = 50
 const OPENING_STEP_MAX_MS: int = 99
 const FULL_BLOOM_STEP: int = 21
-const FULL_BLOOM_HOLD_MS: int = 12000
+const FULL_BLOOM_HOLD_MIN_MS: int = 6000
+const FULL_BLOOM_HOLD_MAX_MS: int = 12000
 const RIPENING_STEP_MS: int = 100
 const LAST_STEP: int = 41
 
@@ -53,7 +57,14 @@ func start(tips: Array, glint_slot_count: int, now_ms: int = Time.get_ticks_msec
 			"interval": rng.randi_range(OPENING_STEP_MIN_MS, OPENING_STEP_MAX_MS),
 			"last_ms": now_ms,
 			"finished": false,
+			"hold_ms": rng.randi_range(FULL_BLOOM_HOLD_MIN_MS, FULL_BLOOM_HOLD_MAX_MS),
 		})
+	if not _tips.is_empty():
+		var first_to_open: Dictionary = _tips[0]
+		for tip in _tips:
+			if tip["step"] > first_to_open["step"]:
+				first_to_open = tip
+		first_to_open["hold_ms"] = FULL_BLOOM_HOLD_MIN_MS
 	_glint_slot_count = mini(glint_slot_count, tips.size())
 
 # Called every frame. Each tip takes at most one step per call, so a stalled frame can't make it jump.
@@ -88,7 +99,7 @@ func _advance_tips(now_ms: int) -> void:
 		if tip["step"] == LAST_STEP:
 			tip["finished"] = true
 		elif tip["step"] == FULL_BLOOM_STEP:
-			tip["interval"] = FULL_BLOOM_HOLD_MS
+			tip["interval"] = tip["hold_ms"]
 		elif tip["step"] > FULL_BLOOM_STEP:
 			tip["interval"] = RIPENING_STEP_MS
 		else:
@@ -116,6 +127,7 @@ func _advance_glints(now_ms: int) -> void:
 				slot["tile"] = _pick_free_tip()
 				slot["started_ms"] = now_ms
 				slot["tile"].show_glint(0)
+				glint_started.emit(slot["tile"])
 			continue
 		var stage: int = (now_ms - slot["started_ms"]) / GLINT_STAGE_MS
 		if stage < GLINT_STAGES:
