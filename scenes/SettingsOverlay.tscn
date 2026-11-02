@@ -17,23 +17,23 @@
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_left_normal"]
 atlas = ExtResource("11_left")
-region = Rect2(0, 0, 28, 40)
-margin = Rect2(28, 10, 28, 20)
+region = Rect2(0, 0, 42, 60)
+margin = Rect2(20, 6, 20, 12)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_left_pressed"]
 atlas = ExtResource("12_left_pressed")
-region = Rect2(0, 0, 28, 40)
-margin = Rect2(28, 10, 28, 20)
+region = Rect2(0, 0, 42, 60)
+margin = Rect2(20, 6, 20, 12)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_right_normal"]
 atlas = ExtResource("13_right")
-region = Rect2(0, 0, 28, 40)
-margin = Rect2(0, 10, 40, 20)
+region = Rect2(0, 0, 42, 60)
+margin = Rect2(0, 6, 30, 12)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_right_pressed"]
 atlas = ExtResource("14_right_pressed")
-region = Rect2(0, 0, 28, 40)
-margin = Rect2(0, 10, 40, 20)
+region = Rect2(0, 0, 42, 60)
+margin = Rect2(0, 6, 30, 12)
 
 [node name="SettingsOverlay" type="Control"]
 z_index = 110
@@ -79,20 +79,20 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 82
-theme_override_constants/margin_top = 51
-theme_override_constants/margin_right = 43
+theme_override_constants/margin_left = 62
+theme_override_constants/margin_top = 37
+theme_override_constants/margin_right = 33
 theme_override_constants/margin_bottom = 20
 
 [node name="VBox" type="VBoxContainer" parent="Panel/MarginContainer"]
 z_index = 110
 layout_mode = 2
-theme_override_constants/separation = 6
+theme_override_constants/separation = 0
 
 [node name="TitleLabel" type="RichTextLabel" parent="Panel/MarginContainer/VBox"]
 unique_name_in_owner = true
 clip_contents = false
-custom_minimum_size = Vector2(278, 0)
+custom_minimum_size = Vector2(318, 0)
 layout_mode = 2
 size_flags_horizontal = 0
 theme = ExtResource("4_theme")
@@ -105,6 +105,7 @@ scroll_active = false
 autowrap_mode = 0
 
 [node name="GapUp" type="Control" parent="Panel/MarginContainer/VBox"]
+custom_minimum_size = Vector2(0, 8)
 layout_mode = 2
 
 [node name="Row_Music" type="HBoxContainer" parent="Panel/MarginContainer/VBox"]
@@ -333,10 +334,11 @@ texture_normal = SubResource("AtlasTexture_right_normal")
 texture_pressed = SubResource("AtlasTexture_right_pressed")
 
 [node name="GapRight3" type="Control" parent="Panel/MarginContainer/VBox"]
+custom_minimum_size = Vector2(0, 8)
 layout_mode = 2
 
 [node name="Row_Close" type="HBoxContainer" parent="Panel/MarginContainer/VBox"]
-custom_minimum_size = Vector2(278, 52)
+custom_minimum_size = Vector2(318, 52)
 layout_mode = 2
 size_flags_horizontal = 0
 theme_override_constants/separation = 8
@@ -352,7 +354,7 @@ texture_pressed = ExtResource("3_btnp")
 [node name="CloseLabel" type="RichTextLabel" parent="Panel/MarginContainer/VBox/Row_Close"]
 unique_name_in_owner = true
 clip_contents = false
-custom_minimum_size = Vector2(278, 0)
+custom_minimum_size = Vector2(318, 0)
 layout_mode = 2
 theme = ExtResource("4_theme")
 theme_override_colors/font_shadow_color = Color(1, 0.780392, 0.458824, 1)

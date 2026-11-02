@@ -4,7 +4,8 @@ extends SceneTree
 # Run with tests/run_tests.sh.
 
 const SETTINGS_FILE := "user://settings.cfg"
-const MIN_TAP_SIZE := Vector2(56, 60)
+const MIN_TAP_SIZE := Vector2(60, 70)
+const ARROW_INK_WIDTH: float = 42.0
 
 var _failures: int = 0
 var _settings: Node
@@ -30,6 +31,7 @@ func _run() -> void:
 	await process_frame
 
 	_test_rows_have_icons_and_big_tap_areas()
+	_test_icons_are_exact_3x_art()
 	_test_names_are_gone()
 	_test_title_and_close_are_centred_on_the_rows()
 	_test_music_selectors_go_both_ways()
@@ -60,6 +62,13 @@ func _test_rows_have_icons_and_big_tap_areas() -> void:
 			elif selector.size.x < MIN_TAP_SIZE.x or selector.size.y < MIN_TAP_SIZE.y:
 				_fail("%s %s has a tap area of only %s" % [row, side, selector.size])
 
+func _test_icons_are_exact_3x_art() -> void:
+	for icon in ["Music_icon", "SFX_icon", "Language_icon", "Animation_icon", "Turn_icon",
+			"Selector_left_icon_normal", "Selector_left_icon_pressed", "Selector_right_icon_normal", "Selector_right_icon_pressed"]:
+		var image: Image = load("res://sprites/UI/%s.png" % icon).get_image()
+		if image.get_size() != Vector2i(60, 60):
+			_fail("%s is %s, the panel expects 60x60" % [icon, image.get_size()])
+
 func _test_names_are_gone() -> void:
 	for row in ["Music", "SFX", "Language", "SolveAnim", "TurnAnim"]:
 		if _overlay.get_node_or_null("Panel/MarginContainer/VBox/Row_%s/%sLabel" % [row, row]) != null:
@@ -68,7 +77,7 @@ func _test_names_are_gone() -> void:
 # The right arrow's tap area runs on past its drawing, so the group ends where the arrow's ink does.
 func _test_title_and_close_are_centred_on_the_rows() -> void:
 	var left: float = _overlay.get_node("Panel/MarginContainer/VBox/Row_Music/MusicIcon").get_global_rect().position.x
-	var right: float = _overlay.get_node("%MusicNext").get_global_rect().position.x + 28.0
+	var right: float = _overlay.get_node("%MusicNext").get_global_rect().position.x + ARROW_INK_WIDTH
 	var centre: float = (left + right) / 2.0
 	for label in ["%TitleLabel", "%CloseLabel"]:
 		var label_centre: float = _overlay.get_node(label).get_global_rect().get_center().x
