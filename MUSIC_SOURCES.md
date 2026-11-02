@@ -1,6 +1,6 @@
 # Classical music sources
 
-The Bach and Beethoven compositions are public domain. `audio/midi/` holds the rebuilt classic recordings. `audio/Midi_beautiful/` holds the rebuilt piano recordings behind the Midi New music option; they are still being refined, and their file names carry a version suffix (for example `BABY_v7_loop.ogg`). This table records their compositions, score sources and game slots.
+The Bach and Beethoven compositions are public domain. `audio/midi/` holds the rebuilt classic recordings, synthesized from sine waves. `audio/Midi_beautiful/` holds the rebuilt piano recordings behind the Midi New music option; they are still being refined, and their file names carry a version suffix (for example `BABY_v7_loop.ogg`). This table records their compositions, score sources and game slots.
 
 | Game slot / destination | Composer and composition | Reconstruction ID | Notation source and terms |
 | --- | --- | --- | --- |

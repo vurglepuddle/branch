@@ -137,6 +137,8 @@ func _advance_glints(now_ms: int) -> void:
 			slot["tile"] = null
 			slot["next_ms"] = now_ms + _glint_wait()
 
+# A tile that just finished is free again straight away, so a fruit sometimes glints twice in a row.
+# The owner likes that, so it's intended.
 func _pick_free_tip() -> Node:
 	var free: Array = []
 	for tip in _tips:

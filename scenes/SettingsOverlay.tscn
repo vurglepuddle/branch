@@ -79,9 +79,9 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 62
-theme_override_constants/margin_top = 37
-theme_override_constants/margin_right = 33
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 41
+theme_override_constants/margin_right = 39
 theme_override_constants/margin_bottom = 20
 
 [node name="VBox" type="VBoxContainer" parent="Panel/MarginContainer"]
@@ -92,12 +92,14 @@ theme_override_constants/separation = 0
 [node name="TitleLabel" type="RichTextLabel" parent="Panel/MarginContainer/VBox"]
 unique_name_in_owner = true
 clip_contents = false
-custom_minimum_size = Vector2(318, 0)
+custom_minimum_size = Vector2(304, 0)
 layout_mode = 2
-size_flags_horizontal = 0
+size_flags_horizontal = 4
 theme = ExtResource("4_theme")
 theme_override_colors/font_shadow_color = Color(1, 0.780392, 0.458824, 1)
-theme_override_font_sizes/normal_font_size = 62
+theme_override_constants/shadow_offset_x = 4
+theme_override_constants/shadow_offset_y = 4
+theme_override_font_sizes/normal_font_size = 64
 bbcode_enabled = true
 text = "[color=white]S[/color][color=#54fcfc]ettings[/color]"
 fit_content = true
@@ -111,6 +113,10 @@ layout_mode = 2
 [node name="Row_Music" type="HBoxContainer" parent="Panel/MarginContainer/VBox"]
 layout_mode = 2
 theme_override_constants/separation = 8
+
+[node name="MusicSpacer" type="Control" parent="Panel/MarginContainer/VBox/Row_Music"]
+custom_minimum_size = Vector2(22, 0)
+layout_mode = 2
 
 [node name="MusicIcon" type="TextureRect" parent="Panel/MarginContainer/VBox/Row_Music"]
 layout_mode = 2
@@ -126,12 +132,14 @@ texture_pressed = SubResource("AtlasTexture_left_pressed")
 [node name="MusicValueLabel" type="RichTextLabel" parent="Panel/MarginContainer/VBox/Row_Music"]
 unique_name_in_owner = true
 clip_contents = false
-custom_minimum_size = Vector2(130, 0)
+custom_minimum_size = Vector2(116, 0)
 layout_mode = 2
 size_flags_vertical = 4
 theme = ExtResource("4_theme")
 theme_override_colors/font_shadow_color = Color(1, 0.780392, 0.458824, 1)
-theme_override_font_sizes/normal_font_size = 38
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/normal_font_size = 32
 bbcode_enabled = true
 text = "[center]Classic[/center]"
 fit_content = true
@@ -148,6 +156,10 @@ texture_pressed = SubResource("AtlasTexture_right_pressed")
 layout_mode = 2
 theme_override_constants/separation = 8
 
+[node name="SFXSpacer" type="Control" parent="Panel/MarginContainer/VBox/Row_SFX"]
+custom_minimum_size = Vector2(22, 0)
+layout_mode = 2
+
 [node name="SFXIcon" type="TextureRect" parent="Panel/MarginContainer/VBox/Row_SFX"]
 layout_mode = 2
 size_flags_vertical = 4
@@ -162,12 +174,14 @@ texture_pressed = SubResource("AtlasTexture_left_pressed")
 [node name="SFXValueLabel" type="RichTextLabel" parent="Panel/MarginContainer/VBox/Row_SFX"]
 unique_name_in_owner = true
 clip_contents = false
-custom_minimum_size = Vector2(130, 0)
+custom_minimum_size = Vector2(116, 0)
 layout_mode = 2
 size_flags_vertical = 4
 theme = ExtResource("4_theme")
 theme_override_colors/font_shadow_color = Color(1, 0.780392, 0.458824, 1)
-theme_override_font_sizes/normal_font_size = 38
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/normal_font_size = 32
 bbcode_enabled = true
 text = "[center]On[/center]"
 fit_content = true
@@ -198,7 +212,7 @@ custom_minimum_size = Vector2(160, 0)
 layout_mode = 2
 theme = ExtResource("4_theme")
 theme_override_colors/font_shadow_color = Color(1, 0.780392, 0.458824, 1)
-theme_override_font_sizes/normal_font_size = 38
+theme_override_font_sizes/normal_font_size = 32
 bbcode_enabled = true
 text = "[color=white]G[/color][color=#54fcfc]raphics[/color]"
 fit_content = true
@@ -218,7 +232,7 @@ custom_minimum_size = Vector2(130, 0)
 layout_mode = 2
 theme = ExtResource("4_theme")
 theme_override_colors/font_shadow_color = Color(1, 0.780392, 0.458824, 1)
-theme_override_font_sizes/normal_font_size = 38
+theme_override_font_sizes/normal_font_size = 32
 bbcode_enabled = true
 text = "[color=white]M[/color][color=#54fcfc]odern[/color]"
 fit_content = true
@@ -228,6 +242,10 @@ autowrap_mode = 0
 [node name="Row_Language" type="HBoxContainer" parent="Panel/MarginContainer/VBox"]
 layout_mode = 2
 theme_override_constants/separation = 8
+
+[node name="LanguageSpacer" type="Control" parent="Panel/MarginContainer/VBox/Row_Language"]
+custom_minimum_size = Vector2(22, 0)
+layout_mode = 2
 
 [node name="LanguageIcon" type="TextureRect" parent="Panel/MarginContainer/VBox/Row_Language"]
 layout_mode = 2
@@ -243,12 +261,14 @@ texture_pressed = SubResource("AtlasTexture_left_pressed")
 [node name="LanguageValueLabel" type="RichTextLabel" parent="Panel/MarginContainer/VBox/Row_Language"]
 unique_name_in_owner = true
 clip_contents = false
-custom_minimum_size = Vector2(130, 0)
+custom_minimum_size = Vector2(116, 0)
 layout_mode = 2
 size_flags_vertical = 4
 theme = ExtResource("4_theme")
 theme_override_colors/font_shadow_color = Color(1, 0.780392, 0.458824, 1)
-theme_override_font_sizes/normal_font_size = 38
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/normal_font_size = 32
 bbcode_enabled = true
 text = "[center]EN[/center]"
 fit_content = true
@@ -265,6 +285,10 @@ texture_pressed = SubResource("AtlasTexture_right_pressed")
 layout_mode = 2
 theme_override_constants/separation = 8
 
+[node name="SolveAnimSpacer" type="Control" parent="Panel/MarginContainer/VBox/Row_SolveAnim"]
+custom_minimum_size = Vector2(22, 0)
+layout_mode = 2
+
 [node name="SolveAnimIcon" type="TextureRect" parent="Panel/MarginContainer/VBox/Row_SolveAnim"]
 layout_mode = 2
 size_flags_vertical = 4
@@ -279,12 +303,14 @@ texture_pressed = SubResource("AtlasTexture_left_pressed")
 [node name="SolveAnimValueLabel" type="RichTextLabel" parent="Panel/MarginContainer/VBox/Row_SolveAnim"]
 unique_name_in_owner = true
 clip_contents = false
-custom_minimum_size = Vector2(130, 0)
+custom_minimum_size = Vector2(116, 0)
 layout_mode = 2
 size_flags_vertical = 4
 theme = ExtResource("4_theme")
 theme_override_colors/font_shadow_color = Color(1, 0.780392, 0.458824, 1)
-theme_override_font_sizes/normal_font_size = 38
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/normal_font_size = 32
 bbcode_enabled = true
 text = "[center]On[/center]"
 fit_content = true
@@ -301,6 +327,10 @@ texture_pressed = SubResource("AtlasTexture_right_pressed")
 layout_mode = 2
 theme_override_constants/separation = 8
 
+[node name="TurnAnimSpacer" type="Control" parent="Panel/MarginContainer/VBox/Row_TurnAnim"]
+custom_minimum_size = Vector2(22, 0)
+layout_mode = 2
+
 [node name="TurnAnimIcon" type="TextureRect" parent="Panel/MarginContainer/VBox/Row_TurnAnim"]
 layout_mode = 2
 size_flags_vertical = 4
@@ -315,12 +345,14 @@ texture_pressed = SubResource("AtlasTexture_left_pressed")
 [node name="TurnAnimValueLabel" type="RichTextLabel" parent="Panel/MarginContainer/VBox/Row_TurnAnim"]
 unique_name_in_owner = true
 clip_contents = false
-custom_minimum_size = Vector2(130, 0)
+custom_minimum_size = Vector2(116, 0)
 layout_mode = 2
 size_flags_vertical = 4
 theme = ExtResource("4_theme")
 theme_override_colors/font_shadow_color = Color(1, 0.780392, 0.458824, 1)
-theme_override_font_sizes/normal_font_size = 38
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/normal_font_size = 32
 bbcode_enabled = true
 text = "[center]On[/center]"
 fit_content = true
@@ -333,14 +365,30 @@ layout_mode = 2
 texture_normal = SubResource("AtlasTexture_right_normal")
 texture_pressed = SubResource("AtlasTexture_right_pressed")
 
+[node name="CreditsBody" type="RichTextLabel" parent="Panel/MarginContainer/VBox"]
+unique_name_in_owner = true
+visible = false
+clip_contents = false
+custom_minimum_size = Vector2(350, 360)
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+theme = ExtResource("4_theme")
+theme_override_colors/font_shadow_color = Color(1, 0.780392, 0.458824, 1)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/normal_font_size = 32
+bbcode_enabled = true
+scroll_active = false
+
 [node name="GapRight3" type="Control" parent="Panel/MarginContainer/VBox"]
 custom_minimum_size = Vector2(0, 8)
 layout_mode = 2
 
 [node name="Row_Close" type="HBoxContainer" parent="Panel/MarginContainer/VBox"]
-custom_minimum_size = Vector2(318, 52)
+custom_minimum_size = Vector2(304, 52)
 layout_mode = 2
-size_flags_horizontal = 0
+size_flags_horizontal = 4
 theme_override_constants/separation = 8
 alignment = 1
 
@@ -351,13 +399,31 @@ layout_mode = 2
 texture_normal = ExtResource("2_btn")
 texture_pressed = ExtResource("3_btnp")
 
-[node name="CloseLabel" type="RichTextLabel" parent="Panel/MarginContainer/VBox/Row_Close"]
+[node name="CreditsLabel" type="RichTextLabel" parent="Panel/MarginContainer/VBox/Row_Close"]
 unique_name_in_owner = true
 clip_contents = false
-custom_minimum_size = Vector2(318, 0)
+custom_minimum_size = Vector2(148, 0)
 layout_mode = 2
 theme = ExtResource("4_theme")
 theme_override_colors/font_shadow_color = Color(1, 0.780392, 0.458824, 1)
+theme_override_constants/shadow_offset_x = 3
+theme_override_constants/shadow_offset_y = 3
+theme_override_font_sizes/normal_font_size = 48
+bbcode_enabled = true
+text = "[center]Credits[/center]"
+fit_content = true
+scroll_active = false
+autowrap_mode = 0
+
+[node name="CloseLabel" type="RichTextLabel" parent="Panel/MarginContainer/VBox/Row_Close"]
+unique_name_in_owner = true
+clip_contents = false
+custom_minimum_size = Vector2(148, 0)
+layout_mode = 2
+theme = ExtResource("4_theme")
+theme_override_colors/font_shadow_color = Color(1, 0.780392, 0.458824, 1)
+theme_override_constants/shadow_offset_x = 3
+theme_override_constants/shadow_offset_y = 3
 theme_override_font_sizes/normal_font_size = 48
 bbcode_enabled = true
 text = "[color=white]C[/color][color=#54fcfc]lose[/color]"

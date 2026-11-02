@@ -37,9 +37,18 @@ Tap a tile to rotate it. That's pretty much it.
 
 ## Status
 
-> Version **0.85.0** — core mechanics are complete and working. Recreated original soundtrack & a modern rendition of it.
+> Version **1.0.0** — the game is complete and playable, so from here on it's new things on top.
 
----
+## What's in it
+
+- **Six difficulty levels**, with freshly grown boards every time
+- **Hand-drawn pixel art animations:** tiles turn, buds open into flowers, and flowers ripen into fruit when you win
+- **Three soundtracks of Bach and Beethoven**, plus an Off switch:
+  - **Classic:** the original game's pieces, rebuilt from public-domain scores
+  - **Modern:** my own renditions
+  - **Midi New:** the same pieces on a sampled grand piano
+- **English and Russian**
+- **Give Up** that shows you the solution, and settings for animations and sound
 
 ---
 
@@ -58,6 +67,8 @@ Grab the latest signed APK from the [Releases](https://github.com/vurglepuddle/b
 3. Open the project in Godot
 4. Export for Android (you'll need the Android export templates and your own keystore for signing)
 
+Tests run headless: `GODOT=/path/to/godot tests/run_tests.sh`
+
 ---
 
 ## About the original
@@ -75,5 +86,7 @@ Code, scenes, shaders and project configuration are licensed under [GPL-3.0](LIC
 Original artwork, the VETKA font, Modern music, the rebuilt classical recordings and sound effects are licensed under [CC BY-NC-SA 4.0](LICENSE-ASSETS.txt), with credit to the project author optional. Commercial use of these assets requires separate permission; contact [vurglepuddle](https://github.com/vurglepuddle) through this repository.
 
 The classical compositions are by **Johann Sebastian Bach** and **Ludwig van Beethoven**. The rebuilt piano recordings use **Salamander Grand Piano V3 by Alexander Holm (CC BY 3.0)**. See [credits and asset terms](CREDITS.md) and the [composition and score sources](MUSIC_SOURCES.md). The rebuilt MIDI and piano files are still being finalized and have not replaced the current classic tracks.
+
+Made with [Godot Engine](https://godotengine.org/license) (MIT). The short version of all this is also in the game, under Settings > Credits.
 
 This is an unofficial fan recreation, unaffiliated with the original developers.

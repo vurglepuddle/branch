@@ -32,11 +32,13 @@ func _run() -> void:
 
 	_test_rows_have_icons_and_big_tap_areas()
 	_test_icons_are_exact_3x_art()
+	_test_font_sizes_are_crisp()
 	_test_names_are_gone()
 	_test_title_and_close_are_centred_on_the_rows()
 	_test_music_selectors_go_both_ways()
 	_test_two_value_selectors()
 	_test_language_updates_everything()
+	_test_credits()
 	await _test_closing()
 
 	_overlay.queue_free()
@@ -69,6 +71,16 @@ func _test_icons_are_exact_3x_art() -> void:
 		if image.get_size() != Vector2i(60, 60):
 			_fail("%s is %s, the panel expects 60x60" % [icon, image.get_size()])
 
+# The font's pixel grid is 16 per em, so any other multiple draws its pixels at fractional sizes and
+# looks blurry. This reads the files, because it has to cover every screen.
+func _test_font_sizes_are_crisp() -> void:
+	var size_pattern := RegEx.create_from_string("font_size = (\\d+)")
+	for path in ["res://scenes/SettingsOverlay.tscn", "res://scenes/main_menu.tscn", "res://scenes/GameHUD.tscn", "res://fonts/main_theme.tres"]:
+		var text: String = FileAccess.get_file_as_string(path)
+		for found in size_pattern.search_all(text):
+			if int(found.get_string(1)) % 16 != 0:
+				_fail("%s uses font size %s, which isn't crisp. Use a multiple of 16" % [path, found.get_string(1)])
+
 func _test_names_are_gone() -> void:
 	for row in ["Music", "SFX", "Language", "SolveAnim", "TurnAnim"]:
 		if _overlay.get_node_or_null("Panel/MarginContainer/VBox/Row_%s/%sLabel" % [row, row]) != null:
@@ -79,10 +91,11 @@ func _test_title_and_close_are_centred_on_the_rows() -> void:
 	var left: float = _overlay.get_node("Panel/MarginContainer/VBox/Row_Music/MusicIcon").get_global_rect().position.x
 	var right: float = _overlay.get_node("%MusicNext").get_global_rect().position.x + ARROW_INK_WIDTH
 	var centre: float = (left + right) / 2.0
-	for label in ["%TitleLabel", "%CloseLabel"]:
-		var label_centre: float = _overlay.get_node(label).get_global_rect().get_center().x
-		if absf(label_centre - centre) > 1.0:
-			_fail("%s is centred at x %.0f, but the rows are centred at %.0f" % [label, label_centre, centre])
+	var bottom_row: Control = _overlay.get_node("%CloseLabel").get_parent()
+	for item in [_overlay.get_node("%TitleLabel"), bottom_row]:
+		var item_centre: float = item.get_global_rect().get_center().x
+		if absf(item_centre - centre) > 1.0:
+			_fail("%s is centred at x %.0f, but the rows are centred at %.0f" % [item.name, item_centre, centre])
 
 func _test_music_selectors_go_both_ways() -> void:
 	_settings.music_style = "classic"
@@ -133,6 +146,68 @@ func _test_language_updates_everything() -> void:
 	_overlay.get_node("%LanguagePrev").pressed.emit()
 	if _settings.language != "en" or title.get_parsed_text() != english_title:
 		_fail("the other language arrow should switch back")
+
+func _test_credits() -> void:
+	_settings.language = "en"
+	_overlay.open()
+	var title: RichTextLabel = _overlay.get_node("%TitleLabel")
+	var body: RichTextLabel = _overlay.get_node("%CreditsBody")
+	var close_word: RichTextLabel = _overlay.get_node("%CloseLabel")
+	var credits_word: RichTextLabel = _overlay.get_node("%CreditsLabel")
+	var row: Control = _overlay.get_node("%MusicNext").get_parent()
+	_expect(not body.visible and credits_word.visible and row.visible, "settings should show its rows and the Credits word")
+
+	_click(credits_word)
+	_expect(_overlay.visible and body.visible and not row.visible and not credits_word.visible, "Credits should replace the rows with the credits")
+	_expect(title.get_parsed_text() == "Credits" and close_word.get_parsed_text() == "Back", "the credits page should say Credits and Back")
+
+	var required: Array[String] = ["vurglepuddle", "Salamander Grand Piano V3", "Alexander Holm", "CC BY 3.0", "Godot", "godotengine.org/license", "GPL-3.0", "CC BY-NC-SA 4.0"]
+	var version: String = ProjectSettings.get_setting("application/config/version", "")
+	_expect(version == "1.0.0", "the project version should be 1.0.0, it is '%s'" % version)
+	var font: Font = load("res://fonts/vetka.ttf")
+	var locale: Node = root.get_node("Locale")
+	for language in ["en", "ru"]:
+		_settings.language = language
+		_overlay._refresh_labels()
+		var text: String = body.get_parsed_text().replace("\n", " ")
+		_expect(text.contains(version), "the %s credits should show the version" % language)
+		for piece in required:
+			_expect(text.contains(piece), "the %s credits are missing '%s'" % [language, piece])
+		_expect(text.split(" ", false).size() < 40, "the %s credits should stay brief" % language)
+		for word in [text, locale.t("credits"), locale.t("back")]:
+			for i in range(word.length()):
+				if word[i] != " " and word[i] != "\n" and not font.has_char(word.unicode_at(i)):
+					_fail("the game font has no '%s' for the %s credits" % [word[i], language])
+	_settings.language = "en"
+	_overlay._refresh_labels()
+
+	_click(close_word)
+	_expect(_overlay.visible, "Back should return to settings, not close the panel")
+	_expect(not body.visible and row.visible and credits_word.visible, "Back should bring the rows back")
+	_expect(title.get_parsed_text() == "Settings" and close_word.get_parsed_text() == "Close", "Back should restore Settings and Close")
+
+	# Leaving from the credits page and coming back starts on settings.
+	_click(credits_word)
+	_press_at(Vector2(4, 4))
+	_expect(not _overlay.visible, "a tap outside should still close the panel from the credits")
+	_overlay.open()
+	_expect(not body.visible and row.visible, "opening the panel should always start on settings")
+
+	# A phone sends a touch as well as the mouse press, and only one of them may count.
+	var touch := InputEventScreenTouch.new()
+	touch.pressed = true
+	credits_word.gui_input.emit(touch)
+	_expect(not body.visible, "a touch event alone shouldn't count, or one tap would act twice")
+
+func _click(control: Control) -> void:
+	var tap := InputEventMouseButton.new()
+	tap.pressed = true
+	tap.button_index = MOUSE_BUTTON_LEFT
+	control.gui_input.emit(tap)
+
+func _expect(condition: bool, message: String) -> void:
+	if not condition:
+		_fail(message)
 
 func _test_closing() -> void:
 	_overlay.open()

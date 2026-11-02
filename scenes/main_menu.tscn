@@ -69,7 +69,7 @@ unique_name_in_owner = true
 clip_contents = false
 layout_mode = 2
 theme = ExtResource("5_m1wwi")
-theme_override_font_sizes/normal_font_size = 38
+theme_override_font_sizes/normal_font_size = 48
 bbcode_enabled = true
 text = "[color=white]S[/color][color=#54fcfc]tart[/color]"
 fit_content = true
@@ -94,7 +94,7 @@ unique_name_in_owner = true
 clip_contents = false
 layout_mode = 2
 theme = ExtResource("5_m1wwi")
-theme_override_font_sizes/normal_font_size = 38
+theme_override_font_sizes/normal_font_size = 48
 bbcode_enabled = true
 text = "[color=white]S[/color][color=#54fcfc]ettings[/color]"
 fit_content = true
@@ -130,7 +130,7 @@ offset_right = -17.0
 offset_bottom = 1219.0
 grow_horizontal = 2
 theme = ExtResource("5_m1wwi")
-theme_override_font_sizes/normal_font_size = 46
+theme_override_font_sizes/normal_font_size = 48
 bbcode_enabled = true
 text = "[center][color=#54fcfc]Baby[/color][/center]"
 scroll_active = false
@@ -147,7 +147,7 @@ offset_top = 1158.0
 offset_right = 227.0
 offset_bottom = 1233.0
 theme = ExtResource("5_m1wwi")
-theme_override_font_sizes/normal_font_size = 62
+theme_override_font_sizes/normal_font_size = 64
 bbcode_enabled = true
 text = "[color=#54fcfc]<[/color]"
 fit_content = true
@@ -164,7 +164,7 @@ offset_top = 1158.0
 offset_right = 381.0
 offset_bottom = 1233.0
 theme = ExtResource("5_m1wwi")
-theme_override_font_sizes/normal_font_size = 62
+theme_override_font_sizes/normal_font_size = 64
 bbcode_enabled = true
 text = "[color=#54fcfc]>[/color]"
 fit_content = true

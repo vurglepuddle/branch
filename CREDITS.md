@@ -28,7 +28,7 @@ These terms cover only rights held by the project author. Public-domain material
 
 The compositions are by **Johann Sebastian Bach** and **Ludwig van Beethoven** and are public domain. The eight pieces and their notation sources are listed in [MUSIC_SOURCES.md](MUSIC_SOURCES.md).
 
-`audio/midi/` holds the rebuilt classic recordings. `audio/Midi_beautiful/` holds the rebuilt piano recordings behind the Midi New music option, which are still being refined.
+`audio/midi/` holds the rebuilt classic recordings, synthesized from sine waves with no sample library. `audio/Midi_beautiful/` holds the rebuilt piano recordings behind the Midi New music option, which are still being refined.
 
 Project-authored performance contributions in both folders use the same asset terms and attribution waiver as the original assets above. The compositions and notation sources listed in [MUSIC_SOURCES.md](MUSIC_SOURCES.md) keep their own public-domain and CC0 status, and existing CC0 dedications remain valid.
 
@@ -40,6 +40,10 @@ The rebuilt piano recordings in `audio/Midi_beautiful/` use **[Salamander Grand 
 
 Retain this sample credit and license link when distributing or reusing the Salamander-based recordings. The project author's attribution waiver does not waive Alexander Holm's attribution requirement. The raw sample library is not included in this repository.
 
+## Godot Engine
+
+VETKA is made with [Godot Engine](https://godotengine.org/license), under the MIT license. The game shows this link in Settings > Credits and prints the license text to the log when that page opens.
+
 ## Godot icon
 
-`icons/icon.svg` is the default Godot project icon and contains the **Godot Engine Logo, copyright (c) 2017 Andrea Calabró**. It is excluded from the original-asset grant. The [Godot logo](https://godotengine.org/press/) is licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/); retain its attribution and license notice when reusing it.
+`icons/icon.svg` is the default Godot project icon and contains the **Godot Engine Logo, copyright (c) 2017 Andrea Calabró**. It is excluded from the original-asset grant and isn't included in the released APK. The [Godot logo](https://godotengine.org/press/) is licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/); retain its attribution and license notice when reusing it.

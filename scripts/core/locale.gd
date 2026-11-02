@@ -24,6 +24,9 @@ const STRINGS: Dictionary = {
 		"start": "Start",
 		"solve_anim": "Solve Anim",
 		"turn_anim": "Turn Anim",
+		"credits": "Credits",
+		"back": "Back",
+		"credits_body": "VETKA %s by vurglepuddle\nBased on Vetka (1992)\n\nMusic: Bach, Beethoven\nPiano: Salamander Grand\nPiano V3, Alexander Holm\n(CC BY 3.0)\nEngine: Godot (MIT)\ngodotengine.org/license\nCode: GPL-3.0\nArt, font, music:\nCC BY-NC-SA 4.0",
 	},
 	"ru": {
 		"settings": "Настройки",
@@ -48,6 +51,9 @@ const STRINGS: Dictionary = {
 		"start": "Старт",
 		"solve_anim": "Анимация",
 		"turn_anim": "Поворот",
+		"credits": "Авторы",
+		"back": "Назад",
+		"credits_body": "VETKA %s\nавтор: vurglepuddle\nПо мотивам игры Ветка (1992)\nМузыка: Бах, Бетховен\nРояль: Salamander Grand\nPiano V3, Alexander Holm\n(CC BY 3.0)\nДвижок: Godot (MIT)\ngodotengine.org/license\nКод: GPL-3.0\nГрафика, шрифт, музыка:\nCC BY-NC-SA 4.0",
 	},
 }
 

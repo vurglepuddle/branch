@@ -6,6 +6,8 @@ const BBCODE_FIRST: String = "#590000"
 const BBCODE_REST: String = "#590000"
 # const BBCODE_FIRST: String = "white"
 # const BBCODE_REST: String = "#54fcfc"
+const BOTTOM_ROW_WIDTH: float = 304.0
+const CREDITS_WORD_WIDTH: float = 148.0 # Credits and Close share the row, with its 8 px gap between them
 
 @onready var title_label: RichTextLabel = %TitleLabel
 @onready var music_prev: TextureButton = %MusicPrev
@@ -27,6 +29,12 @@ const BBCODE_REST: String = "#590000"
 @onready var turn_anim_next: TextureButton = %TurnAnimNext
 @onready var turn_anim_value_label: RichTextLabel = %TurnAnimValueLabel
 @onready var close_label: RichTextLabel = %CloseLabel
+@onready var credits_label: RichTextLabel = %CreditsLabel
+@onready var credits_body: RichTextLabel = %CreditsBody
+@onready var _setting_rows: Array[Control] = [$Panel/MarginContainer/VBox/Row_Music, $Panel/MarginContainer/VBox/Row_SFX,
+	$Panel/MarginContainer/VBox/Row_Language, $Panel/MarginContainer/VBox/Row_SolveAnim, $Panel/MarginContainer/VBox/Row_TurnAnim]
+
+var _showing_credits: bool = false
 
 func _ready() -> void:
 	music_prev.pressed.connect(_on_music_changed.bind(-1))
@@ -42,11 +50,23 @@ func _ready() -> void:
 	for selector in [turn_anim_prev, turn_anim_next]:
 		selector.pressed.connect(_on_turn_anim_toggle)
 	close_label.gui_input.connect(_on_close_label_input)
+	credits_label.gui_input.connect(_on_credits_label_input)
 	visible = false
 
 func open() -> void:
-	_refresh_labels()
+	_show_credits(false)
 	visible = true
+
+func _show_credits(show_them: bool) -> void:
+	_showing_credits = show_them
+	for row in _setting_rows:
+		row.visible = not show_them
+	credits_body.visible = show_them
+	credits_label.visible = not show_them
+	close_label.custom_minimum_size.x = BOTTOM_ROW_WIDTH if show_them else CREDITS_WORD_WIDTH
+	_refresh_labels()
+	if show_them:
+		print(Engine.get_license_text()) # Godot's license asks for its text to be available to players
 
 func close() -> void:
 	visible = false
@@ -84,9 +104,11 @@ func _turn_anim_value_text() -> String:
 	return Locale.t("on") if GlobalSettings.turn_animation else Locale.t("off")
 
 func _refresh_labels() -> void:
-	title_label.bbcode_text          = _fmt_centered(Locale.t("settings"))
+	title_label.bbcode_text          = _fmt_centered(Locale.t("credits" if _showing_credits else "settings"))
 	graphics_label.bbcode_text       = _fmt(Locale.t("graphics"))
-	close_label.bbcode_text          = _fmt_centered(Locale.t("close"))
+	close_label.bbcode_text          = _fmt_centered(Locale.t("back" if _showing_credits else "close"))
+	credits_label.bbcode_text        = _fmt_centered(Locale.t("credits"))
+	credits_body.bbcode_text         = "[center][color=%s]%s[/color][/center]" % [BBCODE_REST, Locale.t("credits_body") % ProjectSettings.get_setting("application/config/version", "")]
 	music_value_label.bbcode_text    = _fmt_centered(_music_value_text())
 	sfx_value_label.bbcode_text      = _fmt_centered(_sfx_value_text())
 	graphics_value_label.bbcode_text = _fmt(_graphics_value_text())
@@ -136,13 +158,20 @@ func _input(event: InputEvent) -> void:
 			close()
 			get_viewport().set_input_as_handled()
 
+# Only mouse presses count here. A phone sends a touch and then a matching mouse press for every tap,
+# so handling both would make one tap on Back also close the panel.
 func _on_close_label_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		_play_button_sound()
-		close()
-	elif event is InputEventScreenTouch and event.pressed:
+		if _showing_credits:
+			_show_credits(false)
+		else:
+			close()
+
+func _on_credits_label_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		_play_button_sound()
-		close()
+		_show_credits(true)
 
 func _play_button_sound() -> void:
 	if AudioManager:
