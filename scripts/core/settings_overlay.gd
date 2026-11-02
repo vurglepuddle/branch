@@ -84,7 +84,7 @@ func _turn_anim_value_text() -> String:
 	return Locale.t("on") if GlobalSettings.turn_animation else Locale.t("off")
 
 func _refresh_labels() -> void:
-	title_label.bbcode_text          = _fmt(Locale.t("settings"))
+	title_label.bbcode_text          = _fmt_centered(Locale.t("settings"))
 	graphics_label.bbcode_text       = _fmt(Locale.t("graphics"))
 	close_label.bbcode_text          = _fmt_centered(Locale.t("close"))
 	music_value_label.bbcode_text    = _fmt_centered(_music_value_text())

@@ -31,6 +31,7 @@ func _run() -> void:
 
 	_test_rows_have_icons_and_big_tap_areas()
 	_test_names_are_gone()
+	_test_title_and_close_are_centred_on_the_rows()
 	_test_music_selectors_go_both_ways()
 	_test_two_value_selectors()
 	_test_language_updates_everything()
@@ -63,6 +64,16 @@ func _test_names_are_gone() -> void:
 	for row in ["Music", "SFX", "Language", "SolveAnim", "TurnAnim"]:
 		if _overlay.get_node_or_null("Panel/MarginContainer/VBox/Row_%s/%sLabel" % [row, row]) != null:
 			_fail("%s should use its icon instead of a name" % row)
+
+# The right arrow's tap area runs on past its drawing, so the group ends where the arrow's ink does.
+func _test_title_and_close_are_centred_on_the_rows() -> void:
+	var left: float = _overlay.get_node("Panel/MarginContainer/VBox/Row_Music/MusicIcon").get_global_rect().position.x
+	var right: float = _overlay.get_node("%MusicNext").get_global_rect().position.x + 28.0
+	var centre: float = (left + right) / 2.0
+	for label in ["%TitleLabel", "%CloseLabel"]:
+		var label_centre: float = _overlay.get_node(label).get_global_rect().get_center().x
+		if absf(label_centre - centre) > 1.0:
+			_fail("%s is centred at x %.0f, but the rows are centred at %.0f" % [label, label_centre, centre])
 
 func _test_music_selectors_go_both_ways() -> void:
 	_settings.music_style = "classic"

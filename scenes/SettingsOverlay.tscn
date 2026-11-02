@@ -80,7 +80,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/margin_left = 82
-theme_override_constants/margin_top = 36
+theme_override_constants/margin_top = 51
 theme_override_constants/margin_right = 43
 theme_override_constants/margin_bottom = 20
 
@@ -92,7 +92,9 @@ theme_override_constants/separation = 6
 [node name="TitleLabel" type="RichTextLabel" parent="Panel/MarginContainer/VBox"]
 unique_name_in_owner = true
 clip_contents = false
+custom_minimum_size = Vector2(278, 0)
 layout_mode = 2
+size_flags_horizontal = 0
 theme = ExtResource("4_theme")
 theme_override_colors/font_shadow_color = Color(1, 0.780392, 0.458824, 1)
 theme_override_font_sizes/normal_font_size = 62
@@ -103,7 +105,6 @@ scroll_active = false
 autowrap_mode = 0
 
 [node name="GapUp" type="Control" parent="Panel/MarginContainer/VBox"]
-custom_minimum_size = Vector2(0, 12)
 layout_mode = 2
 
 [node name="Row_Music" type="HBoxContainer" parent="Panel/MarginContainer/VBox"]
