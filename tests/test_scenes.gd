@@ -185,9 +185,8 @@ func _finish_by_giving_up(grid: Node, diff: String) -> void:
 
 func _check_board(grid: Node, diff: String, entry: String) -> void:
 	var mask: Dictionary = {}
-	for key in root.get_node("DifficultyLayouts").get_valid_cells(diff):
-		var parts: PackedStringArray = key.split(",")
-		mask[Vector2i(int(parts[0]), int(parts[1]))] = true
+	for cell in root.get_node("DifficultyLayouts").get_allowed_cells(diff):
+		mask[cell] = true
 	var wrap: bool = diff == "torrero"
 	if grid.is_toroidal_grid != wrap:
 		_fail("%s %s: is_toroidal_grid is %s" % [diff, entry, grid.is_toroidal_grid])

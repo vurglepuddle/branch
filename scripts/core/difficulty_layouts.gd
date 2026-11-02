@@ -477,11 +477,3 @@ static func get_allowed_cells(difficulty: String) -> Array[Vector2i]:
 	for tile_info in PREVIEW_LAYOUTS.get(difficulty, []):
 		cells.append(tile_info["pos"])
 	return cells
-
-# Returns a Dictionary of "x,y" string keys → true, for O(1) lookup in the generator.
-func get_valid_cells(difficulty: String) -> Dictionary:
-	var result: Dictionary = {}
-	for tile_info in PREVIEW_LAYOUTS.get(difficulty, []):
-		var pos: Vector2i = tile_info["pos"]
-		result["%s,%s" % [pos.x, pos.y]] = true
-	return result
